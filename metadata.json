@@ -1,0 +1,7 @@
+{
+  "name": "Radar Mineral Makassar",
+  "description": "Layanan pesan antar air minum murni galon 19L dan kemasan dus terpercaya untuk Makassar dengan standar SNI dan BPOM.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
