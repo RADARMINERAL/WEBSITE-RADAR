@@ -6,10 +6,30 @@ import { PRODUCTS, FAQ_ITEMS } from '../data/mockData';
 const rawSupabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
-// Sanitasi URL Supabase (buang akhiran /rest/v1 atau garis miring jika ada)
-const cleanSupabaseUrl = rawSupabaseUrl
-  ? rawSupabaseUrl.trim().replace(/\/rest\/v1\/?$/, '').replace(/\/+$/, '')
-  : undefined;
+// Sanitasi URL Supabase: buang akhiran /rest/v1 dan garis miring, DIULANG sampai bersih.
+// (Sebelumnya cuma dibuang sekali, jadi kalau env var VITE_SUPABASE_URL ke-set dengan
+// "/rest/v1" lebih dari sekali, sisa satu "/rest/v1" bikin request akhir jadi
+// ".../rest/v1/rest/v1/orders" -> 404 -> checkout diam-diam gagal tersimpan.)
+function sanitizeSupabaseUrl(url: string): string {
+  let cleaned = url.trim();
+  let previous: string;
+  do {
+    previous = cleaned;
+    cleaned = cleaned.replace(/\/+$/, '').replace(/\/rest\/v1$/, '');
+  } while (cleaned !== previous);
+  return cleaned;
+}
+
+const cleanSupabaseUrl = rawSupabaseUrl ? sanitizeSupabaseUrl(rawSupabaseUrl) : undefined;
+
+if (rawSupabaseUrl && cleanSupabaseUrl && rawSupabaseUrl !== cleanSupabaseUrl) {
+  // Ini nyala di console browser kalau env var-nya masih salah format -
+  // sebaiknya diperbaiki langsung di pengaturan Cloudflare, bukan mengandalkan ini.
+  console.warn(
+    `[supabase] VITE_SUPABASE_URL salah format ("${rawSupabaseUrl}"). ` +
+    `Otomatis dibersihkan jadi "${cleanSupabaseUrl}". Perbaiki env var-nya di Cloudflare agar tidak bergantung pada auto-fix ini.`
+  );
+}
 
 export const isSupabaseConfigured = (): boolean => {
   return Boolean(
