@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Product, OrderForm } from '../types';
 import { MAKASSAR_DISTRICTS, WHATSAPP_NUMBER } from '../data/mockData';
 import { createOrder, fetchProducts } from '../lib/supabase';
-import { sendOrderToGoogleSheets } from '../lib/googleSheets';
 import {
   X,
   Plus,
@@ -14,11 +13,11 @@ import {
   Loader2,
   Copy,
   Check,
-  FileSpreadsheet,
   ExternalLink,
   CreditCard,
   QrCode,
   Banknote,
+  Database,
 } from 'lucide-react';
 
 interface OrderModalProps {
@@ -48,8 +47,6 @@ export const OrderModal: React.FC<OrderModalProps> = ({
   const [createdOrderCode, setCreatedOrderCode] = useState<string>('');
   const [copiedCode, setCopiedCode] = useState(false);
   const [savedToDatabase, setSavedToDatabase] = useState(true);
-  const [savedToGoogleSheet, setSavedToGoogleSheet] = useState(false);
-  const [sheetConfigured, setSheetConfigured] = useState(true);
   const [lastWhatsAppUrl, setLastWhatsAppUrl] = useState<string>('');
   const [lastOrderTotal, setLastOrderTotal] = useState<number>(0);
   const [lastPaymentStatus, setLastPaymentStatus] = useState<string>('Belum Dibayar');
@@ -60,7 +57,6 @@ export const OrderModal: React.FC<OrderModalProps> = ({
       setIsSubmitting(false);
       setCopiedCode(false);
       setSavedToDatabase(true);
-      setSavedToGoogleSheet(false);
 
       // Load prefill customer details if returning customer
       const savedName = localStorage.getItem('radar_customer_name') || '';
@@ -166,36 +162,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
       setCreatedOrderCode(orderCode);
       setSavedToDatabase(result.savedToDatabase);
 
-      // 2. Format rincian produk ringkas
-      const itemsListFormatted = selectedItems.map((p) => {
-        const qty = quantities[p.id];
-        const exchangeNote =
-          p.id === 'galon-19l'
-            ? ` (${exchangeGallon ? 'Tukar Galon' : 'Beli Galon Baru + Deposit Rp40k'})`
-            : '';
-        return `${qty}x ${p.name}${exchangeNote}`;
-      });
-      const itemsSummaryString = itemsListFormatted.join(', ');
-
-      // 3. Simpan otomatis ke Google Sheets via Apps Script Webhook
-      const sheetResult = await sendOrderToGoogleSheets({
-        orderCode: orderCode,
-        customerName: name.trim(),
-        phone: phone.trim(),
-        district: district,
-        address: address.trim(),
-        itemsSummary: itemsSummaryString,
-        total: totalAmount,
-        paymentMethod: paymentMethod,
-        paymentStatus: paymentStatusText,
-        notes: notes.trim(),
-        createdAt: new Date().toISOString(),
-      });
-
-      setSavedToGoogleSheet(sheetResult.success);
-      setSheetConfigured(sheetResult.configured);
-
-      // 4. Susun pesan resmi WhatsApp dengan Kode Pesanan & Status Pembayaran
+      // 2. Susun pesan resmi WhatsApp dengan Kode Pesanan & Status Pembayaran
       const itemsSummaryWhatsApp = selectedItems
         .map((p) => {
           const qty = quantities[p.id];
@@ -304,22 +271,10 @@ export const OrderModal: React.FC<OrderModalProps> = ({
 
               {/* Status Badges */}
               <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
-                {savedToGoogleSheet ? (
-                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    <FileSpreadsheet className="w-3.5 h-3.5" />
-                    Tersimpan Otomatis di Google Sheet
-                  </span>
-                ) : sheetConfigured ? (
-                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-                    <Check className="w-3.5 h-3.5" />
-                    Pesanan Terkirim ke Sistem
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
-                    <FileSpreadsheet className="w-3.5 h-3.5" />
-                    Data Siap Dihubungkan ke Google Sheet
-                  </span>
-                )}
+                <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <Database className="w-3.5 h-3.5" />
+                  {savedToDatabase ? 'Tersimpan di Database Supabase' : 'Tersimpan di Sistem'}
+                </span>
 
                 <span
                   className={`text-xs font-semibold px-3 py-1 rounded-full border ${
