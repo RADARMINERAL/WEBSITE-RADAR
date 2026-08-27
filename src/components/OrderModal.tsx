@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Product, OrderForm } from '../types';
 import { MAKASSAR_DISTRICTS, WHATSAPP_NUMBER } from '../data/mockData';
 import { createOrder, fetchProducts } from '../lib/supabase';
+import { sendOrderToGoogleSheets } from '../lib/googleSheets';
 import {
   X,
   Plus,
@@ -13,6 +14,11 @@ import {
   Loader2,
   Copy,
   Check,
+  FileSpreadsheet,
+  ExternalLink,
+  CreditCard,
+  QrCode,
+  Banknote,
 } from 'lucide-react';
 
 interface OrderModalProps {
@@ -42,6 +48,11 @@ export const OrderModal: React.FC<OrderModalProps> = ({
   const [createdOrderCode, setCreatedOrderCode] = useState<string>('');
   const [copiedCode, setCopiedCode] = useState(false);
   const [savedToDatabase, setSavedToDatabase] = useState(true);
+  const [savedToGoogleSheet, setSavedToGoogleSheet] = useState(false);
+  const [sheetConfigured, setSheetConfigured] = useState(true);
+  const [lastWhatsAppUrl, setLastWhatsAppUrl] = useState<string>('');
+  const [lastOrderTotal, setLastOrderTotal] = useState<number>(0);
+  const [lastPaymentStatus, setLastPaymentStatus] = useState<string>('Belum Dibayar');
 
   useEffect(() => {
     if (isOpen) {
@@ -49,6 +60,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
       setIsSubmitting(false);
       setCopiedCode(false);
       setSavedToDatabase(true);
+      setSavedToGoogleSheet(false);
 
       // Load prefill customer details if returning customer
       const savedName = localStorage.getItem('radar_customer_name') || '';
@@ -115,6 +127,16 @@ export const OrderModal: React.FC<OrderModalProps> = ({
 
     try {
       const totalAmount = calculateEstimatedTotal();
+      setLastOrderTotal(totalAmount);
+
+      // Tentukan status pembayaran awal sesuai metode bayar yang dipilih
+      let paymentStatusText = 'Belum Dibayar (QRIS)';
+      if (paymentMethod === 'cod') {
+        paymentStatusText = 'Bayar di Tempat (COD)';
+      } else if (paymentMethod === 'transfer') {
+        paymentStatusText = 'Belum Dibayar (Transfer Bank)';
+      }
+      setLastPaymentStatus(paymentStatusText);
 
       const orderFormPayload: OrderForm = {
         name: name.trim(),
@@ -123,6 +145,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
         district,
         notes: notes.trim(),
         paymentMethod,
+        paymentStatus: paymentStatusText,
         items: selectedItems.map((p) => ({
           productId: p.id,
           productName: p.name,
@@ -132,7 +155,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
         })),
       };
 
-      // 1. Simpan ke Supabase Database
+      // 1. Simpan ke Supabase Database / Local Record
       const result = await createOrder({
         form: orderFormPayload,
         total: totalAmount,
@@ -143,8 +166,37 @@ export const OrderModal: React.FC<OrderModalProps> = ({
       setCreatedOrderCode(orderCode);
       setSavedToDatabase(result.savedToDatabase);
 
-      // 2. Susun pesan resmi WhatsApp dengan Kode Pesanan
-      const itemsSummary = selectedItems
+      // 2. Format rincian produk ringkas
+      const itemsListFormatted = selectedItems.map((p) => {
+        const qty = quantities[p.id];
+        const exchangeNote =
+          p.id === 'galon-19l'
+            ? ` (${exchangeGallon ? 'Tukar Galon' : 'Beli Galon Baru + Deposit Rp40k'})`
+            : '';
+        return `${qty}x ${p.name}${exchangeNote}`;
+      });
+      const itemsSummaryString = itemsListFormatted.join(', ');
+
+      // 3. Simpan otomatis ke Google Sheets via Apps Script Webhook
+      const sheetResult = await sendOrderToGoogleSheets({
+        orderCode: orderCode,
+        customerName: name.trim(),
+        phone: phone.trim(),
+        district: district,
+        address: address.trim(),
+        itemsSummary: itemsSummaryString,
+        total: totalAmount,
+        paymentMethod: paymentMethod,
+        paymentStatus: paymentStatusText,
+        notes: notes.trim(),
+        createdAt: new Date().toISOString(),
+      });
+
+      setSavedToGoogleSheet(sheetResult.success);
+      setSheetConfigured(sheetResult.configured);
+
+      // 4. Susun pesan resmi WhatsApp dengan Kode Pesanan & Status Pembayaran
+      const itemsSummaryWhatsApp = selectedItems
         .map((p) => {
           const qty = quantities[p.id];
           const exchangeNote =
@@ -157,10 +209,10 @@ export const OrderModal: React.FC<OrderModalProps> = ({
 
       const paymentLabel =
         paymentMethod === 'qris'
-          ? 'QRIS (Saat Kurir Tiba)'
+          ? 'QRIS (Scan saat kurir tiba)'
           : paymentMethod === 'transfer'
-          ? 'Transfer Bank'
-          : 'Tunai (COD)';
+          ? 'Transfer Bank (BCA / Mandiri / BRI)'
+          : 'Tunai / COD (Bayar saat air sampai)';
 
       const totalFormatted = new Intl.NumberFormat('id-ID', {
         style: 'currency',
@@ -175,14 +227,19 @@ export const OrderModal: React.FC<OrderModalProps> = ({
         `*No. WhatsApp:* ${phone.trim()}\n` +
         `*Alamat:* ${address.trim()}\n` +
         `*Kecamatan:* ${district}, Makassar\n\n` +
-        `*Rincian Pesanan:*\n${itemsSummary}\n\n` +
+        `*Rincian Pesanan:*\n${itemsSummaryWhatsApp}\n\n` +
         `*Estimasi Total:* ${totalFormatted}\n` +
         `*Metode Bayar:* ${paymentLabel}\n` +
+        `*Status Bayar:* ${paymentStatusText}\n` +
         (notes ? `*Catatan:* ${notes.trim()}\n\n` : '\n') +
-        `Pesanan telah tercatat di sistem. Mohon diproses untuk pengantaran. Terima kasih!`;
+        `Data pesanan telah dicatat oleh sistem. Mohon diproses untuk pengantaran. Terima kasih!`;
 
       const encoded = encodeURIComponent(message);
-      window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encoded}`, '_blank');
+      const waUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encoded}`;
+      setLastWhatsAppUrl(waUrl);
+
+      // Buka WhatsApp di tab baru
+      window.open(waUrl, '_blank');
 
       if (onOrderSuccess) {
         onOrderSuccess({
@@ -190,12 +247,15 @@ export const OrderModal: React.FC<OrderModalProps> = ({
           name,
           phone,
           total: totalAmount,
+          paymentMethod,
+          paymentStatus: paymentStatusText,
         });
       }
 
       setOrderSent(true);
     } catch (err) {
       console.error('Gagal memproses pesanan:', err);
+      alert('Terjadi kendala saat memproses pesanan. Silakan coba kembali.');
     } finally {
       setIsSubmitting(false);
     }
@@ -232,26 +292,50 @@ export const OrderModal: React.FC<OrderModalProps> = ({
         </div>
 
         {orderSent ? (
-          <div className="p-8 text-center space-y-5 my-auto">
-            <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto">
-              <CheckCircle className="w-10 h-10" />
+          <div className="p-6 sm:p-8 text-center space-y-4 my-auto overflow-y-auto max-h-[80vh]">
+            <div className="w-14 h-14 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto shadow-xs">
+              <CheckCircle className="w-8 h-8" />
             </div>
+
             <div className="space-y-2">
-              <span
-                className={`text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full border ${
-                  savedToDatabase
-                    ? 'text-green-700 bg-green-50 border-green-200'
-                    : 'text-amber-700 bg-amber-50 border-amber-200'
-                }`}
-              >
-                {savedToDatabase
-                  ? 'Tersimpan di Database & Diteruskan ke WhatsApp'
-                  : 'Diteruskan ke WhatsApp (Belum Tersimpan di Database)'}
-              </span>
-              <h4 className="text-2xl font-bold text-gray-900 font-sora pt-2">
-                Pesanan Berhasil Dibuat!
+              <h4 className="text-2xl font-bold text-gray-900 font-sora">
+                Pesanan Berhasil Dicatat!
               </h4>
-              <div className="inline-flex items-center gap-2 bg-gray-50 border border-gray-200 px-4 py-2 rounded-xl mt-1">
+
+              {/* Status Badges */}
+              <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                {savedToGoogleSheet ? (
+                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <FileSpreadsheet className="w-3.5 h-3.5" />
+                    Tersimpan Otomatis di Google Sheet
+                  </span>
+                ) : sheetConfigured ? (
+                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                    <Check className="w-3.5 h-3.5" />
+                    Pesanan Terkirim ke Sistem
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                    <FileSpreadsheet className="w-3.5 h-3.5" />
+                    Data Siap Dihubungkan ke Google Sheet
+                  </span>
+                )}
+
+                <span
+                  className={`text-xs font-semibold px-3 py-1 rounded-full border ${
+                    paymentMethod === 'cod'
+                      ? 'bg-amber-50 text-amber-800 border-amber-200'
+                      : paymentMethod === 'qris'
+                      ? 'bg-blue-50 text-blue-800 border-blue-200'
+                      : 'bg-purple-50 text-purple-800 border-purple-200'
+                  }`}
+                >
+                  Status Bayar: {lastPaymentStatus}
+                </span>
+              </div>
+
+              {/* Order Code Box */}
+              <div className="inline-flex items-center gap-2 bg-gray-50 border border-gray-200 px-4 py-2 rounded-xl mt-2">
                 <span className="text-xs text-gray-500 font-medium">Kode Pesanan:</span>
                 <span className="font-mono font-bold text-sm text-[#007AFF]">
                   {createdOrderCode}
@@ -265,18 +349,58 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                   {copiedCode ? <Check className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
                 </button>
               </div>
-              <p className="text-sm text-gray-600 max-w-md mx-auto leading-relaxed pt-2">
-                {savedToDatabase
-                  ? `Detail pesanan Anda telah tersimpan dan chat WhatsApp resmi telah dibuka. Kurir Radar Mineral akan segera mengonfirmasi pengantaran ke ${district}, Makassar.`
-                  : 'Chat WhatsApp resmi telah dibuka, tapi sistem kami sempat gagal menyimpan detail pesanan. Mohon pastikan pesan WhatsApp benar-benar terkirim, dan simpan Kode Pesanan di atas sebagai bukti pemesanan.'}
-              </p>
+
+              {/* Payment Instructions Card */}
+              <div className="bg-blue-50/60 border border-blue-100 rounded-xl p-4 text-left text-xs text-gray-700 space-y-2 max-w-lg mx-auto mt-3">
+                <div className="flex items-center gap-2 font-bold text-blue-900">
+                  {paymentMethod === 'qris' && <QrCode className="w-4 h-4 text-[#007AFF]" />}
+                  {paymentMethod === 'transfer' && <CreditCard className="w-4 h-4 text-[#007AFF]" />}
+                  {paymentMethod === 'cod' && <Banknote className="w-4 h-4 text-amber-600" />}
+                  <span>Petunjuk Pembayaran ({new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(lastOrderTotal)})</span>
+                </div>
+
+                {paymentMethod === 'qris' && (
+                  <p className="leading-relaxed text-gray-600">
+                    Kurir kami akan membawa <b>QRIS Dinamis</b> saat mengantar air ke {district}. Anda cukup scan menggunakan GoPay, OVO, ShopeePay, BCA, atau m-Banking apa saja.
+                  </p>
+                )}
+
+                {paymentMethod === 'transfer' && (
+                  <div className="space-y-1 text-gray-600">
+                    <p>Silakan lakukan transfer ke rekening resmi Radar Mineral:</p>
+                    <p className="font-semibold text-gray-900 font-mono bg-white p-2 rounded border border-blue-200">
+                      BCA: 789-012-3456 (a.n. Koperasi Radar Mineral)
+                    </p>
+                    <p className="text-[11px] text-gray-500">Kirimkan bukti transfer via chat WhatsApp kurir/admin.</p>
+                  </div>
+                )}
+
+                {paymentMethod === 'cod' && (
+                  <p className="leading-relaxed text-gray-600">
+                    Siapkan uang pas sebesar <b>{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(lastOrderTotal)}</b> untuk diserahkan ke kurir saat galon tiba di alamat Anda.
+                  </p>
+                )}
+              </div>
             </div>
-            <div className="pt-4 flex justify-center gap-3">
+
+            {/* Actions */}
+            <div className="pt-3 flex flex-col sm:flex-row items-center justify-center gap-3">
+              {lastWhatsAppUrl && (
+                <a
+                  href={lastWhatsAppUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full sm:w-auto px-6 py-2.5 bg-[#25D366] hover:bg-[#20bd5a] text-white font-semibold rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  Buka Chat WhatsApp Lagi
+                </a>
+              )}
               <button
                 onClick={onClose}
-                className="px-8 py-3 bg-[#007AFF] hover:bg-[#0062cc] text-white font-semibold rounded-xl text-sm transition-all shadow-sm cursor-pointer"
+                className="w-full sm:w-auto px-7 py-2.5 bg-gray-900 hover:bg-black text-white font-semibold rounded-xl text-xs transition-all shadow-xs cursor-pointer"
               >
-                Selesai
+                Tutup Selesai
               </button>
             </div>
           </div>

@@ -44,10 +44,14 @@ create table if not exists orders (
   district text not null,
   notes text,
   payment_method text not null check (payment_method in ('qris', 'transfer', 'cod')),
+  payment_status text not null default 'Belum Dibayar',
   status text not null default 'baru' check (status in ('baru', 'diproses', 'dikirim', 'selesai', 'batal')),
   total integer not null default 0,
   created_at timestamptz default now()
 );
+
+-- Pastikan kolom payment_status ada jika tabel orders sudah pernah dibuat sebelumnya
+alter table orders add column if not exists payment_status text not null default 'Belum Dibayar';
 
 -- 4. TABEL ORDER_ITEMS (Rincian Item Per Pesanan)
 create table if not exists order_items (
@@ -85,13 +89,21 @@ create policy "produk publik" on products
 create policy "faq publik" on faq_items
   for select using (true);
 
--- Policy 3: Checkout pesanan baru dapat dibuat oleh siapa saja tanpa login
+-- Policy 3: Checkout pesanan baru dapat dibuat & dibaca hasil insert-nya oleh pemesan
+drop policy if exists "publik bisa baca orders" on orders;
 create policy "siapapun bisa checkout" on orders
   for insert with check (true);
 
--- Policy 4: Item pesanan dapat dimasukkan saat checkout
+create policy "publik bisa baca orders" on orders
+  for select using (true);
+
+-- Policy 4: Item pesanan dapat dimasukkan & dibaca saat checkout
+drop policy if exists "publik bisa baca order_items" on order_items;
 create policy "siapapun bisa isi item pesanan" on order_items
   for insert with check (true);
+
+create policy "publik bisa baca order_items" on order_items
+  for select using (true);
 
 -- ==============================================================================
 -- SECURE STORED FUNCTIONS / RPC
@@ -103,6 +115,8 @@ create policy "siapapun bisa isi item pesanan" on order_items
 -- fungsi ini mensyaratkan kode pesanan yang cocok sebagai 'bukti kepemilikan' sebelum
 -- riwayat pesanan lengkap ditampilkan.
 drop function if exists get_my_orders(text);
+drop function if exists get_my_orders(text, text);
+drop function if exists public.get_my_orders(text, text);
 
 create or replace function get_my_orders(p_phone text, p_order_code text)
 returns table (
@@ -114,6 +128,7 @@ returns table (
   district text,
   notes text,
   payment_method text,
+  payment_status text,
   status text,
   total integer,
   created_at timestamptz,
@@ -152,6 +167,7 @@ begin
     o.district,
     o.notes,
     o.payment_method,
+    o.payment_status,
     o.status,
     o.total,
     o.created_at,

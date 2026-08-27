@@ -40,6 +40,7 @@ export interface OrderRecord {
   district: string;
   notes?: string;
   paymentMethod: 'qris' | 'transfer' | 'cod';
+  paymentStatus?: string;
   status: OrderStatus | string;
   total: number;
   createdAt: string;
@@ -60,6 +61,7 @@ export interface OrderForm {
   district: string; // Kecamatan
   notes: string;
   paymentMethod: 'qris' | 'transfer' | 'cod';
+  paymentStatus?: string;
   items: OrderItem[];
 }
 

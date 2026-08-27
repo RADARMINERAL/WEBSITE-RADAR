@@ -3,21 +3,26 @@ import { Product, FaqItem, OrderRecord, OrderForm } from '../types';
 import { PRODUCTS, FAQ_ITEMS } from '../data/mockData';
 
 // Ambil credentials dari environment variables (Vite client-side)
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+const rawSupabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+
+// Sanitasi URL Supabase (buang akhiran /rest/v1 atau garis miring jika ada)
+const cleanSupabaseUrl = rawSupabaseUrl
+  ? rawSupabaseUrl.trim().replace(/\/rest\/v1\/?$/, '').replace(/\/+$/, '')
+  : undefined;
 
 export const isSupabaseConfigured = (): boolean => {
   return Boolean(
-    supabaseUrl &&
+    cleanSupabaseUrl &&
     supabaseAnonKey &&
-    supabaseUrl.startsWith('https://') &&
+    cleanSupabaseUrl.startsWith('https://') &&
     supabaseAnonKey.length > 20
   );
 };
 
 // Inisialisasi Supabase Client (Lazy / Safe initialization)
 export const supabase: SupabaseClient | null = isSupabaseConfigured()
-  ? createClient(supabaseUrl!, supabaseAnonKey!)
+  ? createClient(cleanSupabaseUrl!, supabaseAnonKey!)
   : null;
 
 // ==============================================================================
@@ -135,6 +140,7 @@ export async function createOrder(
           district: form.district,
           notes: form.notes?.trim() || null,
           payment_method: form.paymentMethod,
+          payment_status: form.paymentStatus || 'Belum Dibayar',
           status: 'baru',
           total: total,
         })
@@ -187,6 +193,7 @@ export async function createOrder(
     district: form.district,
     notes: form.notes,
     paymentMethod: form.paymentMethod,
+    paymentStatus: form.paymentStatus || 'Belum Dibayar',
     status: 'baru',
     total: total,
     createdAt: new Date().toISOString(),
@@ -248,6 +255,7 @@ export async function getMyOrders(phone?: string, orderCode?: string): Promise<O
           district: row.district || '',
           notes: row.notes || '',
           paymentMethod: row.payment_method || row.paymentMethod || 'qris',
+          paymentStatus: row.payment_status || row.paymentStatus || 'Belum Dibayar',
           status: row.status || 'baru',
           total: row.total || 0,
           createdAt: row.created_at || row.createdAt || new Date().toISOString(),
@@ -273,6 +281,7 @@ export async function getMyOrders(phone?: string, orderCode?: string): Promise<O
         district: item.district || '',
         notes: item.notes || '',
         paymentMethod: item.paymentMethod || 'qris',
+        paymentStatus: item.paymentStatus || 'Belum Dibayar',
         status: item.status || 'baru',
         total: item.total || 0,
         createdAt: item.date || item.createdAt || new Date().toISOString(),

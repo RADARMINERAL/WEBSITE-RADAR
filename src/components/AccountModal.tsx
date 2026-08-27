@@ -207,13 +207,23 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                         <span className="font-bold text-gray-900 font-mono text-sm">
                           {order.orderCode}
                         </span>
-                        <span className={`px-2.5 py-0.5 rounded-full font-semibold text-[11px] ${badge.bg} ${badge.text}`}>
-                          {badge.label}
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          {order.paymentStatus && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-700 border border-gray-200">
+                              {order.paymentStatus}
+                            </span>
+                          )}
+                          <span className={`px-2.5 py-0.5 rounded-full font-semibold text-[11px] ${badge.bg} ${badge.text}`}>
+                            {badge.label}
+                          </span>
+                        </div>
                       </div>
 
-                      <div className="text-[11px] text-gray-400 mb-2">
-                        Waktu Pesan: {formatDate(order.createdAt)}
+                      <div className="text-[11px] text-gray-400 mb-2 flex items-center justify-between">
+                        <span>Waktu Pesan: {formatDate(order.createdAt)}</span>
+                        <span className="uppercase text-[10px] text-gray-500 font-medium">
+                          Bayar: {order.paymentMethod || 'QRIS'}
+                        </span>
                       </div>
 
                       <div className="space-y-1.5 mb-3 bg-gray-50/70 p-2.5 rounded-xl border border-gray-100">
