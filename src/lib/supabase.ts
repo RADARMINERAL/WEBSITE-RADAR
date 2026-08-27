@@ -113,11 +113,20 @@ export async function createOrder(
 ): Promise<{ orderCode: string; orderId: string; total: number; success: boolean; savedToDatabase: boolean }> {
   const { form, total, exchangeGallon } = params;
 
-  // Generate fallback code
-  const generatedCode = 'RDR-' + Math.floor(100000 + Math.random() * 900000);
-  let orderId = generatedCode;
-  let orderCode = generatedCode;
-  // Jujurkan status penyimpanan: default false, baru jadi true kalau insert Supabase BENAR-BENAR sukses
+  // Helper UUID generator yang kompatibel dengan semua browser modern
+  const generateUUID = () => {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      return crypto.randomUUID();
+    }
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+      const r = (Math.random() * 16) | 0;
+      const v = c === 'x' ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
+  };
+
+  const orderId = generateUUID();
+  const orderCode = 'RDR-' + Math.floor(100000 + Math.random() * 900000);
   let savedToDatabase = false;
 
   // Simpan nomor telepon ke localStorage agar riwayat pesanan mudah dicek kembali
@@ -130,10 +139,12 @@ export async function createOrder(
 
   if (supabase) {
     try {
-      // 1. Insert ke tabel orders
-      const { data: orderData, error: orderError } = await supabase
+      // 1. Insert ke tabel orders langsung dengan ID dan Kode Pesanan
+      const { error: orderError } = await supabase
         .from('orders')
         .insert({
+          id: orderId,
+          order_code: orderCode,
           customer_name: form.name.trim(),
           phone: form.phone.trim(),
           address: form.address.trim(),
@@ -143,16 +154,11 @@ export async function createOrder(
           payment_status: form.paymentStatus || 'Belum Dibayar',
           status: 'baru',
           total: total,
-        })
-        .select('id, order_code')
-        .single();
+        });
 
       if (orderError) {
         console.error('Error insert order to Supabase:', orderError);
-      } else if (orderData) {
-        orderId = orderData.id;
-        orderCode = orderData.order_code || generatedCode;
-
+      } else {
         // 2. Insert ke tabel order_items
         const orderItemsPayload = form.items.map((item) => ({
           order_id: orderId,
@@ -174,7 +180,6 @@ export async function createOrder(
             savedToDatabase = true;
           }
         } else {
-          // Tidak ada item untuk disimpan, tapi baris order-nya sendiri berhasil masuk
           savedToDatabase = true;
         }
       }

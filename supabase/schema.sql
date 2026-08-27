@@ -89,21 +89,13 @@ create policy "produk publik" on products
 create policy "faq publik" on faq_items
   for select using (true);
 
--- Policy 3: Checkout pesanan baru dapat dibuat & dibaca hasil insert-nya oleh pemesan
-drop policy if exists "publik bisa baca orders" on orders;
+-- Policy 3: Checkout pesanan baru dapat dibuat oleh siapa saja tanpa login
 create policy "siapapun bisa checkout" on orders
   for insert with check (true);
 
-create policy "publik bisa baca orders" on orders
-  for select using (true);
-
--- Policy 4: Item pesanan dapat dimasukkan & dibaca saat checkout
-drop policy if exists "publik bisa baca order_items" on order_items;
+-- Policy 4: Item pesanan dapat dimasukkan saat checkout
 create policy "siapapun bisa isi item pesanan" on order_items
   for insert with check (true);
-
-create policy "publik bisa baca order_items" on order_items
-  for select using (true);
 
 -- ==============================================================================
 -- SECURE STORED FUNCTIONS / RPC
@@ -114,11 +106,9 @@ create policy "publik bisa baca order_items" on order_items
 -- PENTING: nomor HP saja TIDAK CUKUP sebagai kunci (nomor HP bukan rahasia) — makanya
 -- fungsi ini mensyaratkan kode pesanan yang cocok sebagai 'bukti kepemilikan' sebelum
 -- riwayat pesanan lengkap ditampilkan.
-drop function if exists get_my_orders(text);
-drop function if exists get_my_orders(text, text);
 drop function if exists public.get_my_orders(text, text);
 
-create or replace function get_my_orders(p_phone text, p_order_code text)
+create function public.get_my_orders(p_phone text, p_order_code text)
 returns table (
   id uuid,
   order_code text,
@@ -128,22 +118,20 @@ returns table (
   district text,
   notes text,
   payment_method text,
-  payment_status text,
   status text,
   total integer,
   created_at timestamptz,
   items jsonb
 )
-language plpgsql security definer
+language plpgsql
+security definer
 as $$
 declare
   v_verified boolean;
 begin
-  -- Verifikasi kepemilikan: harus ada SATU pesanan dengan kombinasi
-  -- nomor HP + kode pesanan yang persis cocok, baru riwayat dibuka
   select exists (
     select 1
-    from orders o
+    from public.orders o
     where o.order_code = p_order_code
       and (
         replace(replace(replace(o.phone, ' ', ''), '-', ''), '+62', '0') =
@@ -153,10 +141,9 @@ begin
   ) into v_verified;
 
   if not v_verified then
-    return; -- tidak cocok -> tidak kembalikan apa pun (diam-diam, tidak bocorkan info)
+    return;
   end if;
 
-  -- Standardisasi nomor HP (hapus spasi & tanda hubung jika ada)
   return query
   select 
     o.id,
@@ -167,7 +154,6 @@ begin
     o.district,
     o.notes,
     o.payment_method,
-    o.payment_status,
     o.status,
     o.total,
     o.created_at,
@@ -181,13 +167,13 @@ begin
             'gallon_exchange', oi.gallon_exchange
           )
         )
-        from order_items oi
+        from public.order_items oi
         where oi.order_id = o.id
       ),
       '[]'::jsonb
     ) as items
-  from orders o
-  where replace(replace(replace(o.phone, ' ', ''), '-', ''), '+62', '0') = 
+  from public.orders o
+  where replace(replace(replace(o.phone, ' ', ''), '-', ''), '+62', '0') =
         replace(replace(replace(p_phone, ' ', ''), '-', ''), '+62', '0')
      or o.phone = p_phone
   order by o.created_at desc
