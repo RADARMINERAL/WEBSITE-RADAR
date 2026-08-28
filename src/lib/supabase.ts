@@ -6,10 +6,6 @@ import { PRODUCTS, FAQ_ITEMS } from '../data/mockData';
 const rawSupabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
-// Sanitasi URL Supabase: buang akhiran /rest/v1 dan garis miring, DIULANG sampai bersih.
-// (Sebelumnya cuma dibuang sekali, jadi kalau env var VITE_SUPABASE_URL ke-set dengan
-// "/rest/v1" lebih dari sekali, sisa satu "/rest/v1" bikin request akhir jadi
-// ".../rest/v1/rest/v1/orders" -> 404 -> checkout diam-diam gagal tersimpan.)
 function sanitizeSupabaseUrl(url: string): string {
   let cleaned = url.trim();
   let previous: string;
@@ -106,7 +102,7 @@ export async function fetchFaqs(): Promise<FaqItem[]> {
       return FAQ_ITEMS;
     }
 
-    return data.map((item) => ({
+    return data.map ((item) => ({
       id: String(item.id),
       category: item.category,
       question: item.question,
