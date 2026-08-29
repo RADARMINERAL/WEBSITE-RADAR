@@ -34,26 +34,36 @@ create table if not exists faq_items (
   created_at timestamptz default now()
 );
 
--- 3. TABEL ORDERS (Pesanan Pelanggan)
+-- 3. TABEL ORDERS (Pesanan Pelanggan B2B)
 create table if not exists orders (
   id uuid primary key default gen_random_uuid(),
   order_code text unique not null default ('RDR-' || floor(random() * 900000 + 100000)::text),
-  customer_name text not null,
+  store_name text,                      -- Nama Toko / Minimarket / Usaha (B2B)
+  customer_name text not null,          -- PIC / Nama Pemesan
   phone text not null,
   address text not null,
   district text not null,
   notes text,
   payment_method text not null check (payment_method in ('qris', 'transfer', 'cod')),
   payment_status text not null default 'Belum Dibayar',
+  payment_reference text,               -- Catatan / No Ref Transfer
+  admin_notes text,                     -- Catatan internal admin (reputasi / catatan toko)
+  amount_paid integer default 0,        -- Jumlah dibayar (jika DP / sebagian)
+  timeline_data jsonb default '{}'::jsonb, -- Timestamp riwayat status { baruAt, diprosesAt, dikirimAt, selesaiAt }
+  eta_text text,                        -- Estimasi waktu tiba dari admin (mis: ±30 Menit, ±1 Jam)
   status text not null default 'baru' check (status in ('baru', 'diproses', 'dikirim', 'selesai', 'batal')),
   total integer not null default 0,
   created_at timestamptz default now()
 );
 
--- Pastikan kolom payment_status ada jika tabel orders sudah pernah dibuat sebelumnya
+-- Pastikan kolom baru ada jika tabel orders sudah pernah dibuat sebelumnya
+alter table orders add column if not exists store_name text;
 alter table orders add column if not exists payment_status text not null default 'Belum Dibayar';
-
--- Kolom updated_at, supaya kelihatan kapan status pesanan terakhir diubah admin
+alter table orders add column if not exists payment_reference text;
+alter table orders add column if not exists admin_notes text;
+alter table orders add column if not exists amount_paid integer default 0;
+alter table orders add column if not exists timeline_data jsonb default '{}'::jsonb;
+alter table orders add column if not exists eta_text text;
 alter table orders add column if not exists updated_at timestamptz not null default now();
 
 create or replace function public.set_updated_at()
@@ -161,23 +171,25 @@ end $$;
 
 -- Fungsi aman untuk mengambil riwayat pesanan berdasarkan nomor telepon + kode pesanan
 -- Menghindari pembukaan akses SELECT publik pada tabel orders (keamanan data pelanggan).
--- PENTING: nomor HP saja TIDAK CUKUP sebagai kunci (nomor HP bukan rahasia) — makanya
--- fungsi ini mensyaratkan kode pesanan yang cocok sebagai 'bukti kepemilikan' sebelum
--- riwayat pesanan lengkap ditampilkan.
 drop function if exists public.get_my_orders(text, text);
 
 create function public.get_my_orders(p_phone text, p_order_code text)
 returns table (
   id uuid,
   order_code text,
+  store_name text,
   customer_name text,
   phone text,
   address text,
   district text,
   notes text,
   payment_method text,
+  payment_status text,
+  payment_reference text,
   status text,
   total integer,
+  timeline_data jsonb,
+  eta_text text,
   created_at timestamptz,
   items jsonb
 )
@@ -207,14 +219,19 @@ begin
   select 
     o.id,
     o.order_code,
+    o.store_name,
     o.customer_name,
     o.phone,
     o.address,
     o.district,
     o.notes,
     o.payment_method,
+    o.payment_status,
+    o.payment_reference,
     o.status,
     o.total,
+    o.timeline_data,
+    o.eta_text,
     o.created_at,
     coalesce(
       (
@@ -241,66 +258,41 @@ end;
 $$;
 
 -- ==============================================================================
--- SEED DATA (DATA AWAL PRODUK & FAQ)
+-- SEED DATA (DATA AWAL 2 PRODUK B2B GROSIR & FAQ)
 -- ==============================================================================
 
--- Seed Produk
+-- Nonaktifkan produk selain 2 produk utama jika sudah ada di database
+update products set is_active = false where id not in ('dus-220ml', 'galon-19l');
+
+-- Seed 2 Produk B2B
 insert into products (id, name, category, badge, image_url, description, capacity, features, price_description, estimated_price, popular, is_active)
 values 
 (
+  'dus-220ml',
+  'Air Kemasan Cup (220ml)',
+  'dus',
+  'B2B Grosir • Min. 10 Dus',
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuDiIjJC08yhMhzI51Ew6bID79AuWytQhm_vLcpbVjCo8QU1fjkF3c84hf76sjh6vDqNC5_YdPS5n5o-W9E18zMxPkDe_GroDMHlN9D4E9gySVfQuFhYJc8JPaVBtQGtrpL6Qasmwzh6-2zePs-wZyil67Lh8VBLJ8mG1lf7L8HJpDW-SbH0euLaa4ByfJlHKJulyxsWepOvWhEHvqPM5hNQjVg5AwZEK69AaSjmGr4BE2K_kCS-1OUi',
+  'Air mineral kemasan cup/gelas 220ml isi 48 cup per dus. Pasokan utama untuk toko bahan campuran, minimarket (Alfamart/Indomaret), dan toko grosir.',
+  '220ml x 48 Cup per Dus',
+  array['Isi 48 cup per dus (Kardus tebal tahan tumpuk)', 'Minimal pemesanan (MOQ): 10 Dus', 'Lid seal rapat anti bocor & sedotan higienis', 'Harga grosir distributor bersaing'],
+  'Rp30.000 / dus (Harga Grosir)',
+  30000,
+  true,
+  true
+),
+(
   'galon-19l',
-  'Galon 19 Liter',
+  'Air Galon 19 Liter',
   'galon',
-  'Paling Populer',
-  'https://images.unsplash.com/photo-1548839140-29a749e1bc4e?auto=format&fit=crop&q=80&w=800',
-  'Air mineral alami higienis dalam kemasan galon 19L, cocok untuk kebutuhan keluarga dan kantor. Diproses dengan multi-filtrasi dan ozonisasi.',
-  '19 Liter',
-  array['Tutup galon segel ganda higienis', 'Bebas BPA & ramah lingkungan', 'Cocok untuk dispenser panas/dingin', 'Layanan antar sampai ke lantai ruangan'],
+  'B2B Grosir • Min. 5 Galon',
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuA34OJreaZvE10wieVICb1bNayLOes9DyRyRUVrnzTL8aHRSgSSY01JQr49eh_Hp1a7mZcXRVXXtt0EBj_sOrvyS309M3O1yXOx5tKFHTZVbYP85HBrsCKm3NKhaYGZ57WmDyJGv5-0QhAV9y23i0r0OThd4cGCzH6F5vWfHGn_OOLF51e-x7_5VGS-TyQjZ5mIwKhncwWYftzWMslkW6c-meKvi8iniM-YGF1hNqREfgVSG0LegqNH',
+  'Air mineral alami higienis kemasan galon 19L untuk pasokan toko kelontong, pangkalan galon, dan ritel.',
+  '19 Liter per Galon',
+  array['Kapasitas 19 Liter standar', 'Minimal pemesanan (MOQ): 5 Galon', 'Tutup galon segel ganda higienis', 'Layanan tukar galon kosong / beli baru'],
   'Rp18.000 / galon (isi ulang)',
   18000,
   true,
-  true
-),
-(
-  'dus-600ml',
-  'Air Dus 600ml (Isi 24 Botol)',
-  'dus',
-  'Praktis',
-  'https://lh3.googleusercontent.com/aida-public/AB6AXuDiIjJC08yhMhzI51Ew6bID79AuWytQhm_vLcpbVjCo8QU1fjkF3c84hf76sjh6vDqNC5_YdPS5n5o-W9E18zMxPkDe_GroDMHlN9D4E9gySVfQuFhYJc8JPaVBtQGtrpL6Qasmwzh6-2zePs-wZyil67Lh8VBLJ8mG1lf7L8HJpDW-SbH0euLaa4ByfJlHKJulyxsWepOvWhEHvqPM5hNQjVg5AwZEK69AaSjmGr4BE2K_kCS-1OUi',
-  'Kemasan botol sedang 600ml dalam kardus isi 24 botol. Sangat ideal untuk acara meeting, seminar, perjamuan, maupun konsumsi harian.',
-  '600ml x 24 Botol',
-  array['Botol kokoh dan ergonomis', 'Segel tutup ulir rapat & aman', 'Mudah dibawa bepergian / aktivitas outdoor', 'Kardus tebal tahan tumpuk'],
-  'Rp48.000 / dus',
-  48000,
-  true,
-  true
-),
-(
-  'dus-330ml',
-  'Air Dus 330ml (Isi 24 Botol Mini)',
-  'dus',
-  'Favorit Acara',
-  'https://lh3.googleusercontent.com/aida-public/AB6AXuDiIjJC08yhMhzI51Ew6bID79AuWytQhm_vLcpbVjCo8QU1fjkF3c84hf76sjh6vDqNC5_YdPS5n5o-W9E18zMxPkDe_GroDMHlN9D4E9gySVfQuFhYJc8JPaVBtQGtrpL6Qasmwzh6-2zePs-wZyil67Lh8VBLJ8mG1lf7L8HJpDW-SbH0euLaa4ByfJlHKJulyxsWepOvWhEHvqPM5hNQjVg5AwZEK69AaSjmGr4BE2K_kCS-1OUi',
-  'Kemasan botol mini 330ml yang elegan dan pas untuk sajian tamu undangan pesta pernikahan, rapat kantor, atau pengajian.',
-  '330ml x 24 Botol',
-  array['Ukuran kompak & pas sekali minum', 'Tampilan botol modern & rapi', 'Meminimalisir air terbuang', 'Kemasan kardus rapi'],
-  'Rp42.000 / dus',
-  42000,
-  false,
-  true
-),
-(
-  'dus-220ml',
-  'Air Dus Cup 220ml (Isi 48 Gelas)',
-  'dus',
-  'Ekonomis',
-  'https://lh3.googleusercontent.com/aida-public/AB6AXuDiIjJC08yhMhzI51Ew6bID79AuWytQhm_vLcpbVjCo8QU1fjkF3c84hf76sjh6vDqNC5_YdPS5n5o-W9E18zMxPkDe_GroDMHlN9D4E9gySVfQuFhYJc8JPaVBtQGtrpL6Qasmwzh6-2zePs-wZyil67Lh8VBLJ8mG1lf7L8HJpDW-SbH0euLaa4ByfJlHKJulyxsWepOvWhEHvqPM5hNQjVg5AwZEK69AaSjmGr4BE2K_kCS-1OUi',
-  'Air mineral kemasan cup/gelas 220ml isi 48 cup per dus. Paling ekonomis dan praktis untuk hajatan besar, arisan, dan kegiatan sosial.',
-  '220ml x 48 Cup',
-  array['Lid seal kuat anti bocor', 'Sudah termasuk sedotan higienis di tiap dus', 'Paling hemat untuk tamu banyak', 'Kardus kokoh'],
-  'Rp30.000 / dus',
-  30000,
-  false,
   true
 )
 on conflict (id) do update set
@@ -321,38 +313,39 @@ insert into faq_items (category, question, answer, sort_order)
 values
 (
   'pemesanan',
-  'Bagaimana cara memesan air galon atau dus di Radar Mineral?',
-  'Anda dapat memesan langsung melalui tombol "Pesan Sekarang" di website ini. Isi data nama, alamat, dan jumlah pesanan, lalu klik tombol "Kirim Pesanan ke WhatsApp". Pesanan Anda akan langsung tersimpan di database dan diteruskan ke admin kami.',
+  'Berapa batas minimal pemesanan (MOQ) untuk toko / pelanggan B2B?',
+  'Batas minimal pemesanan khusus B2B grosir: Minimal 10 Dus untuk Air Kemasan Cup 220ml (isi 48 cup) dan Minimal 5 Galon untuk Air Galon 19 Liter.',
   1
 ),
 (
   'pemesanan',
-  'Berapa batas minimal pemesanan untuk layanan antar?',
-  'Minimal pemesanan untuk pengantaran bebas ongkir adalah 2 galon (19L) atau 2 dus kemasan botol/gelas. Untuk kebutuhan kantor atau acara dalam jumlah besar, kami siap melayani partai besar.',
+  'Siapa saja segmen pelanggan Radar Mineral?',
+  'Kami melayani rantai minimarket (Alfamart, Indomaret), toko bahan campuran, toko grosir sembako, warung kelontong, dan kebutuhan institusi/usaha di Makassar.',
   2
 ),
 (
   'pengiriman',
-  'Berapa lama waktu pengantaran setelah pesanan dikirim?',
-  'Pesanan diantar dalam rentang waktu 30 hingga 60 menit tergantung jarak lokasi dan kepadatan antrean kurir.',
+  'Apakah melayani pengiriman langsung ke toko di seluruh Makassar?',
+  'Ya, armada kurir internal kami mengantarkan pasokan langsung ke toko mitra di seluruh kecamatan Kota Makassar.',
   3
 ),
 (
   'pembayaran',
   'Metode pembayaran apa saja yang tersedia?',
-  'Kami menerima 3 metode pembayaran: QRIS Instan (bisa discan langsung saat kurir tiba), Transfer Bank (BCA, Mandiri, BRI), dan Pembayaran Tunai saat barang diterima (COD).',
+  'Tersedia Scan QRIS, Transfer Bank (BCA, Mandiri, BRI), dan Pembayaran Tunai saat barang tiba (COD).',
   4
 ),
 (
-  'produk',
-  'Bagaimana jika saya pelanggan baru dan belum memiliki galon kosong?',
-  'Untuk pelanggan baru, Anda cukup membayar biaya deposit galon baru sebesar Rp40.000 per galon. Pada pesanan berikutnya, Anda hanya perlu membayar harga isi ulang (Rp18.000).',
+  'pembayaran',
+  'Apakah tersedia nota / invoice untuk pembukuan toko?',
+  'Ya, admin menyediakan dokumen invoice resmi sederhana yang memuat rincian produk, kuantitas, harga, dan total belanja untuk arsip toko Anda.',
   5
 ),
 (
   'produk',
-  'Apakah kualitas air Radar Mineral teruji laboratorium?',
-  'Ya, air Radar Mineral diproses melalui filtrasi multi-tahap, ozonisasi, dan sterilisasi sinar UV sesuai standar SNI & Permenkes RI.',
+  'Bagaimana standar higienitas produk Radar Mineral?',
+  'Setiap galon dan cup diproses melalui multi-filtrasi, ozonisasi, dan sterilisasi sinar UV sesuai standar SNI & BPOM RI.',
   6
 )
 on conflict do nothing;
+

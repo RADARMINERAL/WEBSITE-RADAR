@@ -18,6 +18,9 @@ import {
   QrCode,
   Banknote,
   Database,
+  Building2,
+  AlertTriangle,
+  Info,
 } from 'lucide-react';
 
 interface OrderModalProps {
@@ -36,6 +39,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
   const [products, setProducts] = useState<Product[]>([]);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [exchangeGallon, setExchangeGallon] = useState(true);
+  const [storeName, setStoreName] = useState('');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [district, setDistrict] = useState('Panakkukang');
@@ -50,6 +54,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
   const [lastWhatsAppUrl, setLastWhatsAppUrl] = useState<string>('');
   const [lastOrderTotal, setLastOrderTotal] = useState<number>(0);
   const [lastPaymentStatus, setLastPaymentStatus] = useState<string>('Belum Dibayar');
+  const [moqError, setMoqError] = useState<string>('');
 
   useEffect(() => {
     if (isOpen) {
@@ -57,24 +62,36 @@ export const OrderModal: React.FC<OrderModalProps> = ({
       setIsSubmitting(false);
       setCopiedCode(false);
       setSavedToDatabase(true);
+      setMoqError('');
 
       // Load prefill customer details if returning customer
+      const savedStore = localStorage.getItem('radar_customer_store') || '';
       const savedName = localStorage.getItem('radar_customer_name') || '';
       const savedPhone = localStorage.getItem('radar_customer_phone') || '';
       const savedAddress = localStorage.getItem('radar_customer_address') || '';
       const savedDistrict = localStorage.getItem('radar_customer_district') || 'Panakkukang';
 
+      if (savedStore) setStoreName(savedStore);
       if (savedName) setName(savedName);
       if (savedPhone) setPhone(savedPhone);
       if (savedAddress) setAddress(savedAddress);
       if (savedDistrict) setDistrict(savedDistrict);
 
-      // Load products dynamically
+      // Load 2 B2B products dynamically
       fetchProducts().then((loadedProducts) => {
-        setProducts(loadedProducts);
+        // Filter only the 2 B2B SKUs
+        const b2bOnly = loadedProducts.filter(
+          (p) => p.id === 'dus-220ml' || p.id === 'galon-19l'
+        );
+        setProducts(b2bOnly);
+
         const initial: Record<string, number> = {};
-        loadedProducts.forEach((p) => {
-          initial[p.id] = p.id === (initialProductId || 'galon-19l') ? 2 : 0;
+        b2bOnly.forEach((p) => {
+          if (p.id === (initialProductId || 'dus-220ml')) {
+            initial[p.id] = p.id === 'dus-220ml' ? 10 : 5;
+          } else {
+            initial[p.id] = 0;
+          }
         });
         setQuantities(initial);
       });
@@ -83,12 +100,37 @@ export const OrderModal: React.FC<OrderModalProps> = ({
 
   if (!isOpen) return null;
 
-  const updateQuantity = (id: string, delta: number) => {
+  const updateQuantityWithMoq = (id: string, delta: number) => {
+    setMoqError('');
     setQuantities((prev) => {
       const current = prev[id] || 0;
-      const next = Math.max(0, current + delta);
+      const moq = id === 'dus-220ml' ? 10 : 5;
+
+      if (current === 0 && delta > 0) {
+        // First selection jumps directly to MOQ
+        return { ...prev, [id]: moq };
+      }
+
+      const next = current + delta;
+      if (next <= 0) {
+        return { ...prev, [id]: 0 };
+      }
+      if (next < moq && delta < 0) {
+        // Dropping below MOQ resets to 0 (unselected)
+        return { ...prev, [id]: 0 };
+      }
       return { ...prev, [id]: next };
     });
+  };
+
+  const handleManualQuantityChange = (id: string, valStr: string) => {
+    setMoqError('');
+    const val = parseInt(valStr, 10);
+    if (isNaN(val) || val <= 0) {
+      setQuantities((prev) => ({ ...prev, [id]: 0 }));
+      return;
+    }
+    setQuantities((prev) => ({ ...prev, [id]: val }));
   };
 
   const selectedItems = products.filter((p) => (quantities[p.id] || 0) > 0);
@@ -108,14 +150,38 @@ export const OrderModal: React.FC<OrderModalProps> = ({
     return sum;
   };
 
+  const validateMoq = (): boolean => {
+    const dusQty = quantities['dus-220ml'] || 0;
+    const galonQty = quantities['galon-19l'] || 0;
+
+    if (dusQty === 0 && galonQty === 0) {
+      setMoqError('Silakan pilih minimal satu produk (Air Dus 220ml atau Galon 19L).');
+      return false;
+    }
+
+    if (dusQty > 0 && dusQty < 10) {
+      setMoqError('Minimal pemesanan Air Dus 220ml (48 cup) adalah 10 Dus.');
+      return false;
+    }
+
+    if (galonQty > 0 && galonQty < 5) {
+      setMoqError('Minimal pemesanan Air Galon 19L adalah 5 Galon.');
+      return false;
+    }
+
+    setMoqError('');
+    return true;
+  };
+
   const handleSendToWhatsApp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (totalItemsCount === 0) {
-      alert('Pilih minimal 1 item produk untuk memesan.');
+
+    if (!validateMoq()) {
       return;
     }
+
     if (!name.trim() || !phone.trim() || !address.trim()) {
-      alert('Mohon lengkapi Nama, No. WhatsApp, dan Alamat Pengiriman Anda.');
+      alert('Mohon lengkapi Nama Toko/PIC, No. WhatsApp, dan Alamat Pengiriman Toko.');
       return;
     }
 
@@ -125,7 +191,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
       const totalAmount = calculateEstimatedTotal();
       setLastOrderTotal(totalAmount);
 
-      // Tentukan status pembayaran awal sesuai metode bayar yang dipilih
+      // Tentukan status pembayaran awal
       let paymentStatusText = 'Belum Dibayar (QRIS)';
       if (paymentMethod === 'cod') {
         paymentStatusText = 'Bayar di Tempat (COD)';
@@ -135,6 +201,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
       setLastPaymentStatus(paymentStatusText);
 
       const orderFormPayload: OrderForm = {
+        storeName: storeName.trim() || undefined,
         name: name.trim(),
         phone: phone.trim(),
         address: address.trim(),
@@ -158,11 +225,17 @@ export const OrderModal: React.FC<OrderModalProps> = ({
         exchangeGallon,
       });
 
+      if (!result.success) {
+        setMoqError(result.error || 'Pesanan gagal divalidasi.');
+        setIsSubmitting(false);
+        return;
+      }
+
       const orderCode = result.orderCode;
       setCreatedOrderCode(orderCode);
       setSavedToDatabase(result.savedToDatabase);
 
-      // 2. Susun pesan resmi WhatsApp dengan Kode Pesanan & Status Pembayaran
+      // 2. Susun pesan resmi WhatsApp B2B
       const itemsSummaryWhatsApp = selectedItems
         .map((p) => {
           const qty = quantities[p.id];
@@ -176,10 +249,10 @@ export const OrderModal: React.FC<OrderModalProps> = ({
 
       const paymentLabel =
         paymentMethod === 'qris'
-          ? 'QRIS (Scan saat kurir tiba)'
+          ? 'QRIS (Scan saat kurir tiba di toko)'
           : paymentMethod === 'transfer'
           ? 'Transfer Bank (BCA / Mandiri / BRI)'
-          : 'Tunai / COD (Bayar saat air sampai)';
+          : 'Tunai / COD (Bayar saat pasokan tiba)';
 
       const totalFormatted = new Intl.NumberFormat('id-ID', {
         style: 'currency',
@@ -188,18 +261,19 @@ export const OrderModal: React.FC<OrderModalProps> = ({
       }).format(totalAmount);
 
       const message =
-        `*PESANAN AIR MINUM - RADAR MINERAL MAKASSAR*\n` +
+        `*PESANAN GROSIR B2B - RADAR MINERAL MAKASSAR*\n` +
         `*Kode Pesanan:* ${orderCode}\n\n` +
-        `*Nama Pemesan:* ${name.trim()}\n` +
+        (storeName.trim() ? `*Nama Toko / Usaha:* ${storeName.trim()}\n` : '') +
+        `*Penanggung Jawab / PIC:* ${name.trim()}\n` +
         `*No. WhatsApp:* ${phone.trim()}\n` +
-        `*Alamat:* ${address.trim()}\n` +
+        `*Alamat Toko:* ${address.trim()}\n` +
         `*Kecamatan:* ${district}, Makassar\n\n` +
-        `*Rincian Pesanan:*\n${itemsSummaryWhatsApp}\n\n` +
+        `*Rincian Pasokan Grosir:*\n${itemsSummaryWhatsApp}\n\n` +
         `*Estimasi Total:* ${totalFormatted}\n` +
-        `*Metode Bayar:* ${paymentLabel}\n` +
-        `*Status Bayar:* ${paymentStatusText}\n` +
-        (notes ? `*Catatan:* ${notes.trim()}\n\n` : '\n') +
-        `Data pesanan telah dicatat oleh sistem. Mohon diproses untuk pengantaran. Terima kasih!`;
+        `*Metode Pembayaran:* ${paymentLabel}\n` +
+        `*Status Pembayaran:* ${paymentStatusText}\n` +
+        (notes ? `*Catatan / Jam Operasional:* ${notes.trim()}\n\n` : '\n') +
+        `Pesanan telah dicatat di sistem B2B Radar Mineral. Mohon konfirmasi jadwal kirim armada. Terima kasih!`;
 
       const encoded = encodeURIComponent(message);
       const waUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encoded}`;
@@ -211,6 +285,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
       if (onOrderSuccess) {
         onOrderSuccess({
           orderCode,
+          storeName: storeName.trim(),
           name,
           phone,
           total: totalAmount,
@@ -221,7 +296,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
 
       setOrderSent(true);
     } catch (err) {
-      console.error('Gagal memproses pesanan:', err);
+      console.error('Gagal memproses pesanan B2B:', err);
       alert('Terjadi kendala saat memproses pesanan. Silakan coba kembali.');
     } finally {
       setIsSubmitting(false);
@@ -243,11 +318,11 @@ export const OrderModal: React.FC<OrderModalProps> = ({
         <div className="px-6 py-5 bg-[#007AFF] text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
-              <ShoppingBag className="w-5 h-5 text-white" />
+              <Building2 className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h3 className="font-bold text-lg font-sora">Formulir Pesan Cepat</h3>
-              <p className="text-xs text-white/80">Layanan pesan antar higienis ke pintu rumah Anda</p>
+              <h3 className="font-bold text-lg font-sora">Formulir Pesanan Grosir (B2B)</h3>
+              <p className="text-xs text-white/80">Khusus Toko Bahan Campuran, Minimarket & Toko Grosir</p>
             </div>
           </div>
           <button
@@ -266,7 +341,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
 
             <div className="space-y-2">
               <h4 className="text-2xl font-bold text-gray-900 font-sora">
-                Pesanan Berhasil Dicatat!
+                Pesanan Grosir Berhasil Dicatat!
               </h4>
 
               {/* Status Badges */}
@@ -316,23 +391,23 @@ export const OrderModal: React.FC<OrderModalProps> = ({
 
                 {paymentMethod === 'qris' && (
                   <p className="leading-relaxed text-gray-600">
-                    Kurir kami akan membawa <b>QRIS Dinamis</b> saat mengantar air ke {district}. Anda cukup scan menggunakan GoPay, OVO, ShopeePay, BCA, atau m-Banking apa saja.
+                    Kurir armada kami membawa <b>QRIS Dinamis</b> saat tiba di toko Anda di {district}. Anda dapat melakukan scan dengan GoPay, OVO, ShopeePay, BCA, atau m-Banking apa saja.
                   </p>
                 )}
 
                 {paymentMethod === 'transfer' && (
                   <div className="space-y-1 text-gray-600">
-                    <p>Silakan lakukan transfer ke rekening resmi Radar Mineral:</p>
+                    <p>Silakan lakukan transfer ke rekening resmi distributor Radar Mineral:</p>
                     <p className="font-semibold text-gray-900 font-mono bg-white p-2 rounded border border-blue-200">
                       BCA: 789-012-3456 (a.n. Koperasi Radar Mineral)
                     </p>
-                    <p className="text-[11px] text-gray-500">Kirimkan bukti transfer via chat WhatsApp kurir/admin.</p>
+                    <p className="text-[11px] text-gray-500">Kirimkan bukti transfer via chat WhatsApp admin untuk konfirmasi langsung.</p>
                   </div>
                 )}
 
                 {paymentMethod === 'cod' && (
                   <p className="leading-relaxed text-gray-600">
-                    Siapkan uang pas sebesar <b>{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(lastOrderTotal)}</b> untuk diserahkan ke kurir saat galon tiba di alamat Anda.
+                    Siapkan pembayaran tunai sebesar <b>{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(lastOrderTotal)}</b> saat armada tiba membongkar pasokan di toko Anda.
                   </p>
                 )}
               </div>
@@ -361,23 +436,46 @@ export const OrderModal: React.FC<OrderModalProps> = ({
           </div>
         ) : (
           <form onSubmit={handleSendToWhatsApp} className="p-6 overflow-y-auto space-y-6 flex-1 text-[#191c1e]">
+            {/* MOQ Banner Notice */}
+            <div className="p-3.5 bg-blue-50/80 border border-blue-200 rounded-xl flex items-start gap-2.5 text-xs text-blue-900">
+              <Info className="w-4 h-4 text-[#007AFF] shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold">Ketentuan Pemesanan B2B Grosir:</p>
+                <p className="text-blue-800 text-[11px] mt-0.5">
+                  • <b>Air Dus 220ml (48 cup)</b>: Minimal pengambilan <b>10 Dus</b><br />
+                  • <b>Air Galon 19L</b>: Minimal pengambilan <b>5 Galon</b>
+                </p>
+              </div>
+            </div>
+
+            {/* Error banner if MOQ violated */}
+            {moqError && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2 text-xs text-red-700 font-semibold animate-fadeIn">
+                <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
+                <span>{moqError}</span>
+              </div>
+            )}
+
             {/* Step 1: Product Selection */}
             <div>
               <div className="flex items-center justify-between mb-3">
                 <label className="text-sm font-bold text-gray-800 font-sora flex items-center gap-2">
                   <span className="w-5 h-5 rounded-full bg-[#007AFF] text-white text-[11px] flex items-center justify-center font-bold">1</span>
-                  Pilih Produk & Jumlah
+                  Pilih Produk & Jumlah Grosir
                 </label>
-                <span className="text-xs text-[#007AFF] font-medium">Min. order 2 galon/dus</span>
+                <span className="text-xs text-[#007AFF] font-medium">B2B Distributor</span>
               </div>
 
               <div className="space-y-3">
                 {products.map((p) => {
                   const qty = quantities[p.id] || 0;
+                  const moq = p.id === 'dus-220ml' ? 10 : 5;
+                  const stepUnit = p.id === 'dus-220ml' ? 10 : 5;
+
                   return (
                     <div
                       key={p.id}
-                      className={`p-3.5 rounded-xl border transition-all flex items-center justify-between ${
+                      className={`p-3.5 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
                         qty > 0 ? 'border-[#007AFF] bg-[#007AFF]/5 shadow-xs' : 'border-gray-200 hover:border-gray-300'
                       }`}
                     >
@@ -385,38 +483,62 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                         <img
                           src={p.image}
                           alt={p.name}
-                          className="w-12 h-12 rounded-lg object-cover bg-gray-100 shrink-0"
+                          className="w-13 h-13 rounded-lg object-cover bg-gray-100 shrink-0"
                         />
                         <div className="min-w-0">
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-1.5">
                             <h4 className="font-semibold text-sm text-gray-900 truncate">{p.name}</h4>
-                            {p.badge && (
-                              <span className="text-[10px] px-2 py-0.5 bg-blue-100 text-[#007AFF] rounded-full font-medium">
-                                {p.badge}
-                              </span>
-                            )}
+                            <span className="text-[10px] px-2 py-0.5 bg-blue-100 text-[#007AFF] rounded-full font-bold">
+                              MOQ: Min {moq} {p.category === 'dus' ? 'Dus' : 'Galon'}
+                            </span>
                           </div>
-                          <p className="text-xs text-gray-500">{p.capacity} • {p.priceDescription}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">{p.capacity} • {p.priceDescription}</p>
                         </div>
                       </div>
 
                       {/* Quantity buttons */}
-                      <div className="flex items-center gap-2 shrink-0 ml-3">
+                      <div className="flex items-center justify-end gap-1.5 shrink-0">
+                        {/* Quick -Step */}
+                        {qty >= moq + stepUnit && (
+                          <button
+                            type="button"
+                            onClick={() => updateQuantityWithMoq(p.id, -stepUnit)}
+                            className="px-2 py-1 text-[11px] font-bold rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 cursor-pointer"
+                            title={`Kurangi ${stepUnit}`}
+                          >
+                            -{stepUnit}
+                          </button>
+                        )}
                         <button
                           type="button"
-                          onClick={() => updateQuantity(p.id, -1)}
+                          onClick={() => updateQuantityWithMoq(p.id, -1)}
                           disabled={qty === 0}
                           className="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-30 flex items-center justify-center text-gray-700 transition-colors cursor-pointer"
                         >
                           <Minus className="w-3.5 h-3.5" />
                         </button>
-                        <span className="w-7 text-center font-bold text-sm text-gray-900">{qty}</span>
+                        <input
+                          type="number"
+                          min={0}
+                          value={qty}
+                          onChange={(e) => handleManualQuantityChange(p.id, e.target.value)}
+                          className="w-12 text-center font-bold text-sm text-gray-900 bg-white border border-gray-200 rounded-lg py-1 focus:outline-none focus:ring-1 focus:ring-[#007AFF]"
+                        />
                         <button
                           type="button"
-                          onClick={() => updateQuantity(p.id, 1)}
+                          onClick={() => updateQuantityWithMoq(p.id, 1)}
                           className="w-8 h-8 rounded-lg bg-[#007AFF] hover:bg-[#0062cc] text-white flex items-center justify-center transition-colors cursor-pointer"
                         >
                           <Plus className="w-3.5 h-3.5" />
+                        </button>
+                        {/* Quick +Step */}
+                        <button
+                          type="button"
+                          onClick={() => updateQuantityWithMoq(p.id, stepUnit)}
+                          className="px-2 py-1 text-[11px] font-bold rounded-lg bg-blue-50 hover:bg-blue-100 text-[#007AFF] cursor-pointer"
+                          title={`Tambah ${stepUnit}`}
+                        >
+                          +{stepUnit}
                         </button>
                       </div>
                     </div>
@@ -429,7 +551,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                 <div className="mt-3 p-3 bg-blue-50/70 border border-blue-100 rounded-xl flex items-start gap-3">
                   <ShieldCheck className="w-5 h-5 text-[#007AFF] shrink-0 mt-0.5" />
                   <div className="text-xs text-gray-700 flex-1">
-                    <p className="font-semibold text-gray-900 mb-1">Status Galon 19L:</p>
+                    <p className="font-semibold text-gray-900 mb-1">Status Galon 19L Toko:</p>
                     <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                       <label className="flex items-center gap-1.5 cursor-pointer">
                         <input
@@ -439,7 +561,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                           onChange={() => setExchangeGallon(true)}
                           className="text-[#007AFF] focus:ring-[#007AFF]"
                         />
-                        <span>Tukar galon kosong (Gratis)</span>
+                        <span>Tukar galon kosong toko (Hanya isi ulang)</span>
                       </label>
                       <label className="flex items-center gap-1.5 cursor-pointer">
                         <input
@@ -449,7 +571,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                           onChange={() => setExchangeGallon(false)}
                           className="text-[#007AFF] focus:ring-[#007AFF]"
                         />
-                        <span>Pelanggan Baru (Deposit Rp40.000/galon)</span>
+                        <span>Buka stok baru / Beli Galon (+Rp40.000/galon)</span>
                       </label>
                     </div>
                   </div>
@@ -461,23 +583,36 @@ export const OrderModal: React.FC<OrderModalProps> = ({
             <div className="space-y-4 pt-2 border-t border-gray-100">
               <label className="text-sm font-bold text-gray-800 font-sora flex items-center gap-2">
                 <span className="w-5 h-5 rounded-full bg-[#007AFF] text-white text-[11px] flex items-center justify-center font-bold">2</span>
-                Informasi Pengiriman (Area Makassar)
+                Informasi Toko & Pengiriman (Area Makassar)
               </label>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  Nama Toko / Minimarket / Usaha *
+                </label>
+                <input
+                  type="text"
+                  placeholder="Contoh: Toko Campuran Berkah / Alfamart Cab. Pettarani / Toko Sembako Jaya"
+                  value={storeName}
+                  onChange={(e) => setStoreName(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#007AFF] focus:border-[#007AFF]"
+                />
+              </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Nama Lengkap *</label>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Penanggung Jawab / PIC *</label>
                   <input
                     type="text"
                     required
-                    placeholder="Contoh: Ibu Rina / Pak Dodi"
+                    placeholder="Contoh: Pak Herman / Ibu Fatma"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#007AFF] focus:border-[#007AFF]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">No. WhatsApp *</label>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">No. WhatsApp Toko/PIC *</label>
                   <input
                     type="tel"
                     required
@@ -505,11 +640,11 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                   </select>
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">Alamat Lengkap & Patokan *</label>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Alamat Lengkap Toko & Patokan *</label>
                   <input
                     type="text"
                     required
-                    placeholder="Jl. Perintis Kemerdekaan KM 9 No. 45 (Dekat Indomaret)"
+                    placeholder="Jl. Perintis Kemerdekaan KM 9 No. 45 (Depan SPBU)"
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
                     className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#007AFF] focus:border-[#007AFF]"
@@ -518,10 +653,10 @@ export const OrderModal: React.FC<OrderModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Catatan Tambahan (Opsional)</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Catatan / Jam Operasional Toko (Opsional)</label>
                 <input
                   type="text"
-                  placeholder="Misal: Taruh di teras, minta diantar jam 14.00 WITA"
+                  placeholder="Misal: Toko buka jam 08.00, minta kirim siang"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#007AFF] focus:border-[#007AFF]"
@@ -591,7 +726,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                     className="sr-only"
                   />
                   <span className="text-xs font-bold font-sora">Tunai / COD</span>
-                  <span className="text-[10px] text-gray-500 mt-0.5">Bayar di tempat</span>
+                  <span className="text-[10px] text-gray-500 mt-0.5">Bayar saat tiba</span>
                 </label>
               </div>
             </div>
@@ -622,7 +757,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                 ) : (
                   <>
                     <Send className="w-4 h-4" />
-                    <span>Kirim Pesanan ke WhatsApp</span>
+                    <span>Kirim Pesanan Grosir ke WhatsApp</span>
                   </>
                 )}
               </button>
@@ -633,4 +768,5 @@ export const OrderModal: React.FC<OrderModalProps> = ({
     </div>
   );
 };
+
 

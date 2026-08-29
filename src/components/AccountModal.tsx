@@ -1,5 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { User, Package, Clock, MapPin, X, RefreshCw, Phone, Search, Loader2, MessageSquare, AlertCircle } from 'lucide-react';
+import {
+  User,
+  Package,
+  Clock,
+  MapPin,
+  X,
+  RefreshCw,
+  Phone,
+  Search,
+  Loader2,
+  MessageSquare,
+  Building2,
+  Truck,
+  CheckCircle2,
+  Hourglass,
+  XCircle,
+  Calendar,
+} from 'lucide-react';
 import { WHATSAPP_NUMBER } from '../data/mockData';
 import { getMyOrders, getOrderStatusBadge } from '../lib/supabase';
 import { OrderRecord } from '../types';
@@ -19,6 +36,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
   const [phone, setPhone] = useState<string>('');
   const [orderCode, setOrderCode] = useState<string>('');
   const [customerName, setCustomerName] = useState<string>('');
+  const [storeName, setStoreName] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [hasSearched, setHasSearched] = useState<boolean>(false);
 
@@ -41,24 +59,19 @@ export const AccountModal: React.FC<AccountModalProps> = ({
     if (isOpen) {
       const savedPhone = localStorage.getItem('radar_customer_phone') || '';
       const savedName = localStorage.getItem('radar_customer_name') || '';
+      const savedStore = localStorage.getItem('radar_customer_store') || '';
       const savedCode = localStorage.getItem('radar_last_order_code') || '';
       setPhone(savedPhone);
       setCustomerName(savedName);
+      setStoreName(savedStore);
       setOrderCode(savedCode);
 
-      // Auto-muat riwayat hanya kalau browser ini sendiri yang menyimpan kode pesanan
-      // terakhir (pelanggan asli) — bukan cuma nomor HP, supaya tidak asal buka riwayat.
       if (savedPhone && savedCode) {
         loadOrders(savedPhone, savedCode);
       }
     }
   }, [isOpen]);
 
-  // Auto-refresh status pesanan tiap 20 detik selagi modal terbuka & sudah ada hasil
-  // pencarian, supaya pelanggan lihat perubahan status tanpa klik "Perbarui Data" manual.
-  // Ini polling, bukan realtime push - RLS sengaja TIDAK mengizinkan baca publik ke
-  // tabel orders (supaya pesanan orang lain tidak bisa dibaca sembarangan), jadi
-  // update di sini tetap lewat RPC get_my_orders yang sudah diverifikasi phone+kode.
   useEffect(() => {
     if (!isOpen || !hasSearched || !phone || !orderCode) return;
     const interval = setInterval(() => {
@@ -78,30 +91,46 @@ export const AccountModal: React.FC<AccountModalProps> = ({
     loadOrders(phone, orderCode);
   };
 
-  const formatDate = (isoString: string) => {
+  const formatDateTime = (isoString?: string) => {
+    if (!isoString) return '-';
     try {
       const date = new Date(isoString);
       return new Intl.DateTimeFormat('id-ID', {
-        dateStyle: 'medium',
-        timeStyle: 'short',
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
       }).format(date);
     } catch {
       return isoString;
     }
   };
 
+  const formatTimeOnly = (isoString?: string) => {
+    if (!isoString) return '';
+    try {
+      const date = new Date(isoString);
+      return new Intl.DateTimeFormat('id-ID', {
+        hour: '2-digit',
+        minute: '2-digit',
+      }).format(date);
+    } catch {
+      return '';
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 animate-fadeIn">
-      <div className="bg-white w-full max-w-xl rounded-2xl shadow-2xl border border-gray-100 overflow-hidden relative flex flex-col max-h-[90vh]">
+      <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl border border-gray-100 overflow-hidden relative flex flex-col max-h-[92vh]">
         {/* Header */}
         <div className="px-6 py-5 bg-[#007AFF] text-white flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white">
-              <User className="w-5 h-5" />
+              <Building2 className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-lg font-sora">Pelanggan Radar Mineral</h3>
-              <p className="text-xs text-white/80">Lacak Status Pesanan & Riwayat Transaksi</p>
+              <h3 className="font-bold text-lg font-sora">Pelacakan Pesanan B2B</h3>
+              <p className="text-xs text-white/80">Lacak Pengiriman Armada & Status Pembayaran Toko</p>
             </div>
           </div>
           <button
@@ -117,10 +146,10 @@ export const AccountModal: React.FC<AccountModalProps> = ({
           <div className="bg-gradient-to-r from-[#0058bc] to-[#007AFF] text-white p-4 sm:p-5 rounded-2xl shadow-sm flex items-center justify-between">
             <div>
               <span className="text-[10px] uppercase font-bold tracking-wider bg-white/20 px-2.5 py-0.5 rounded-full">
-                {customerName ? `Pelanggan: ${customerName}` : 'Member Radar Mineral'}
+                {storeName ? `Toko: ${storeName}` : customerName ? `PIC: ${customerName}` : 'Mitra Grosir Radar'}
               </span>
-              <h4 className="text-base font-bold mt-1.5 font-sora">Layanan Antar Aktif</h4>
-              <p className="text-xs text-white/80">Pengantaran cepat bergaransi ke seluruh kecamatan</p>
+              <h4 className="text-base font-bold mt-1.5 font-sora">Layanan Pasokan B2B Aktif</h4>
+              <p className="text-xs text-white/80">Pengantaran armada internal berjadwal langsung ke toko</p>
             </div>
             <button
               onClick={() => {
@@ -129,7 +158,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
               }}
               className="px-4 py-2.5 bg-white text-[#007AFF] text-xs font-bold rounded-xl shadow-sm hover:bg-blue-50 transition-all cursor-pointer shrink-0"
             >
-              Pesan Lagi
+              Order Grosir Lagi
             </button>
           </div>
 
@@ -169,11 +198,11 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                 ) : (
                   <Search className="w-3.5 h-3.5" />
                 )}
-                <span>Cari</span>
+                <span>Lacak</span>
               </button>
             </div>
             <p className="text-[11px] text-gray-400">
-              Kode Pesanan ada di konfirmasi setelah Anda memesan — ini melindungi riwayat pesanan Anda supaya tidak bisa dibuka orang lain yang cuma tahu nomor HP Anda.
+              Kode Pesanan tertera pada invoice dan chat WhatsApp saat Anda melakukan pemesanan.
             </p>
           </form>
 
@@ -182,7 +211,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
             <div className="flex items-center justify-between mb-3">
               <h4 className="text-sm font-bold text-gray-800 font-sora flex items-center gap-2">
                 <Package className="w-4 h-4 text-[#007AFF]" />
-                <span>Riwayat Pesanan</span>
+                <span>Riwayat Pesanan Grosir</span>
                 <span className="text-xs font-normal text-gray-500">({orders.length})</span>
               </h4>
               <button
@@ -205,58 +234,166 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                 <Package className="w-10 h-10 mx-auto mb-2 text-gray-300" />
                 <p className="text-sm font-medium text-gray-600">Belum ada riwayat pesanan.</p>
                 <p className="text-xs text-gray-400 mt-1">
-                  Masukkan nomor WhatsApp dan Kode Pesanan yang Anda gunakan saat memesan untuk melihat riwayat pengantaran.
+                  Masukkan nomor WhatsApp dan Kode Pesanan toko Anda untuk melihat riwayat dan posisi pengantaran armada.
                 </p>
               </div>
             ) : (
-              <div className="space-y-3.5">
+              <div className="space-y-4">
                 {orders.map((order, idx) => {
                   const badge = getOrderStatusBadge(order.status);
+                  const timeline = order.timeline || {};
+                  const isDelivering = order.status === 'dikirim';
+                  const isCompleted = order.status === 'selesai';
+                  const isProcessing = order.status === 'diproses' || isDelivering || isCompleted;
+
                   return (
                     <div
                       key={order.id || idx}
-                      className="p-4 border border-gray-200 rounded-2xl hover:border-gray-300 transition-colors bg-white shadow-xs"
+                      className="p-4 sm:p-5 border border-gray-200 rounded-2xl hover:border-gray-300 transition-colors bg-white shadow-xs space-y-3.5"
                     >
-                      <div className="flex items-center justify-between text-xs mb-2.5">
-                        <span className="font-bold text-gray-900 font-mono text-sm">
-                          {order.orderCode}
-                        </span>
-                        <div className="flex items-center gap-1.5">
-                          {order.paymentStatus && (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-700 border border-gray-200">
-                              {order.paymentStatus}
+                      {/* Top Header Card */}
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-gray-900 font-mono text-sm">
+                              {order.orderCode}
                             </span>
-                          )}
+                            {order.storeName && (
+                              <span className="text-xs font-semibold px-2 py-0.5 bg-blue-50 text-[#007AFF] rounded-md">
+                                {order.storeName}
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[11px] text-gray-400 flex items-center gap-1 mt-0.5">
+                            <Calendar className="w-3 h-3" />
+                            {formatDateTime(order.createdAt)}
+                          </span>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span
+                            className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
+                              order.paymentStatus === 'Sudah Dibayar'
+                                ? 'bg-green-100 text-green-800'
+                                : order.paymentStatus === 'DP (Sebagian)'
+                                ? 'bg-amber-100 text-amber-800'
+                                : 'bg-red-100 text-red-800'
+                            }`}
+                          >
+                            {order.paymentStatus || 'Belum Dibayar'}
+                          </span>
                           <span className={`px-2.5 py-0.5 rounded-full font-semibold text-[11px] ${badge.bg} ${badge.text}`}>
                             {badge.label}
                           </span>
                         </div>
                       </div>
 
-                      <div className="text-[11px] text-gray-400 mb-2 flex items-center justify-between">
-                        <span>Waktu Pesan: {formatDate(order.createdAt)}</span>
-                        <span className="uppercase text-[10px] text-gray-500 font-medium">
-                          Bayar: {order.paymentMethod || 'QRIS'}
-                        </span>
-                      </div>
+                      {/* Time-Based Delivery Timeline (Requirement 4 - Opsi B) */}
+                      {order.status !== 'batal' ? (
+                        <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-3.5 space-y-2.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-blue-900 font-sora flex items-center gap-1.5">
+                              <Truck className="w-3.5 h-3.5 text-[#007AFF]" />
+                              Progres Pengantaran Armada Radar
+                            </span>
+                            {order.etaText && order.status === 'dikirim' && (
+                              <span className="text-[11px] font-bold text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded-full">
+                                Estimasi Tiba: {order.etaText}
+                              </span>
+                            )}
+                          </div>
 
-                      <div className="space-y-1.5 mb-3 bg-gray-50/70 p-2.5 rounded-xl border border-gray-100">
+                          {/* Stepper Timeline */}
+                          <div className="grid grid-cols-4 gap-1 pt-1 text-center">
+                            {/* Step 1: Baru */}
+                            <div className="space-y-1">
+                              <div className="w-6 h-6 mx-auto rounded-full bg-[#007AFF] text-white flex items-center justify-center text-[10px] font-bold shadow-xs">
+                                <Check className="w-3.5 h-3.5" />
+                              </div>
+                              <p className="text-[10px] font-bold text-gray-800 leading-tight">Diterima</p>
+                              <p className="text-[9px] text-gray-500">
+                                {formatTimeOnly(timeline.baruAt || order.createdAt)}
+                              </p>
+                            </div>
+
+                            {/* Step 2: Diproses */}
+                            <div className="space-y-1">
+                              <div
+                                className={`w-6 h-6 mx-auto rounded-full flex items-center justify-center text-[10px] font-bold shadow-xs ${
+                                  isProcessing
+                                    ? 'bg-[#007AFF] text-white'
+                                    : 'bg-gray-200 text-gray-400'
+                                }`}
+                              >
+                                {isProcessing ? <Check className="w-3.5 h-3.5" /> : '2'}
+                              </div>
+                              <p className="text-[10px] font-bold text-gray-800 leading-tight">Disiapkan</p>
+                              <p className="text-[9px] text-gray-500">
+                                {formatTimeOnly(timeline.diprosesAt)}
+                              </p>
+                            </div>
+
+                            {/* Step 3: Dikirim */}
+                            <div className="space-y-1">
+                              <div
+                                className={`w-6 h-6 mx-auto rounded-full flex items-center justify-center text-[10px] font-bold shadow-xs ${
+                                  isDelivering || isCompleted
+                                    ? 'bg-indigo-600 text-white animate-pulse'
+                                    : 'bg-gray-200 text-gray-400'
+                                }`}
+                              >
+                                {isCompleted ? <Check className="w-3.5 h-3.5" /> : <Truck className="w-3 h-3" />}
+                              </div>
+                              <p className="text-[10px] font-bold text-gray-800 leading-tight">Diantar Kurir</p>
+                              <p className="text-[9px] text-gray-500">
+                                {formatTimeOnly(timeline.dikirimAt)}
+                              </p>
+                            </div>
+
+                            {/* Step 4: Selesai */}
+                            <div className="space-y-1">
+                              <div
+                                className={`w-6 h-6 mx-auto rounded-full flex items-center justify-center text-[10px] font-bold shadow-xs ${
+                                  isCompleted
+                                    ? 'bg-green-600 text-white'
+                                    : 'bg-gray-200 text-gray-400'
+                                }`}
+                              >
+                                {isCompleted ? <Check className="w-3.5 h-3.5" /> : '4'}
+                              </div>
+                              <p className="text-[10px] font-bold text-gray-800 leading-tight">Terkirim</p>
+                              <p className="text-[9px] text-gray-500">
+                                {formatTimeOnly(timeline.selesaiAt)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="p-2.5 bg-red-50 text-red-700 rounded-xl text-xs flex items-center gap-2">
+                          <XCircle className="w-4 h-4 text-red-600" />
+                          <span>Pesanan ini telah dibatalkan ({formatDateTime(timeline.batalAt || order.updatedAt)})</span>
+                        </div>
+                      )}
+
+                      {/* Items Summary */}
+                      <div className="space-y-1.5 bg-gray-50/70 p-2.5 rounded-xl border border-gray-100">
                         {order.items?.map((item: any, i: number) => (
                           <div key={i} className="text-xs text-gray-700 flex justify-between">
                             <span className="truncate pr-2">
                               • {item.product_name || item.name || 'Produk Air Mineral'}
                             </span>
-                            <span className="font-semibold text-gray-900 shrink-0">
+                            <span className="font-bold text-gray-900 shrink-0">
                               {item.quantity || item.qty || 1}x
                             </span>
                           </div>
                         ))}
                       </div>
 
+                      {/* Footer & CS contact */}
                       <div className="pt-2 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-                        <span className="flex items-center gap-1 text-gray-500 truncate max-w-[260px]">
+                        <span className="flex items-center gap-1 text-gray-500 truncate max-w-[280px]">
                           <MapPin className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                          <span className="truncate">{order.address}</span>
+                          <span className="truncate">{order.address} ({order.district})</span>
                         </span>
                         <div className="flex items-center justify-between sm:justify-end gap-3">
                           <span className="font-bold text-[#007AFF] text-sm font-sora">
@@ -289,10 +426,10 @@ export const AccountModal: React.FC<AccountModalProps> = ({
           <div className="p-3.5 bg-blue-50/60 rounded-xl border border-blue-100 flex items-center justify-between text-xs">
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4 text-[#007AFF]" />
-              <span className="text-gray-700">Butuh bantuan pengantaran cepat?</span>
+              <span className="text-gray-700">Butuh jadwal pengiriman rutin toko?</span>
             </div>
             <a
-              href={`https://wa.me/${WHATSAPP_NUMBER}?text=Halo%20Admin%20Radar%20Mineral,%20saya%20butuh%20bantuan%20pengantaran`}
+              href={`https://wa.me/${WHATSAPP_NUMBER}?text=Halo%20Admin%20Radar%20Mineral,%20saya%20ingin%20jadwalkan%20pasokan%20rutin%20toko`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-[#007AFF] font-bold hover:underline"
@@ -305,4 +442,5 @@ export const AccountModal: React.FC<AccountModalProps> = ({
     </div>
   );
 };
+
 

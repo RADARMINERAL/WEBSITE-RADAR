@@ -34,9 +34,9 @@ export function App() {
 
   const handleOpenTerms = () => {
     setLegalModal({
-      title: 'Syarat & Ketentuan Layanan',
+      title: 'Syarat & Ketentuan Layanan B2B',
       content:
-        '1. Pengantaran reguler berlaku di seluruh kecamatan kota Makassar.\n2. Minimal pemesanan layanan antar adalah 2 galon (19L) atau 2 dus kemasan botol/cup.\n3. Pelanggan baru tanpa galon kosong dikenakan biaya deposit galon sebesar Rp40.000 yang bersifat refundable saat berhenti berlangganan.\n4. Pembayaran dapat dilakukan via Scan QRIS saat kurir tiba, Transfer Bank, atau Tunai (COD).',
+        '1. Pengantaran armada distributor resmi berlaku untuk toko kelontong, minimarket (Alfamart/Indomaret), dan grosir di seluruh Makassar.\n2. Ketentuan Minimum Order Quantity (MOQ): Air Dus 220ml isi 48 cup minimal 10 Dus, dan Air Galon 19L minimal 5 Galon.\n3. Pelanggan baru galon tanpa galon kosong dikenakan biaya deposit galon sebesar Rp40.000 yang bersifat refundable saat pengembalian galon.\n4. Pembayaran dapat dilakukan via Scan QRIS saat kurir tiba, Transfer Bank Resmi BCA, atau Tunai (COD).',
     });
   };
 

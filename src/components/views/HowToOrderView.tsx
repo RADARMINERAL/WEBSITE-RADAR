@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { PageTab } from '../../types';
-import { MAKASSAR_DISTRICTS, WHATSAPP_NUMBER } from '../../data/mockData';
-import { ShoppingBag, MessageSquare, Truck, CreditCard, ChevronRight, CheckCircle2, MapPin, Search } from 'lucide-react';
+import { MAKASSAR_DISTRICTS } from '../../data/mockData';
+import { ShoppingBag, MessageSquare, Truck, CreditCard, ChevronRight, CheckCircle2, MapPin, Search, Building2, Store } from 'lucide-react';
 
 interface HowToOrderViewProps {
   onNavigate: (tab: PageTab) => void;
@@ -14,26 +14,26 @@ export const HowToOrderView: React.FC<HowToOrderViewProps> = ({ onNavigate, onOp
   const steps = [
     {
       num: '01',
-      title: 'Pilih Produk Air Mineral',
-      desc: 'Pilih varian Galon 19L untuk kebutuhan rumah/kantor atau Air Dus (botol 600ml/330ml/cup 220ml) untuk acara dan bepergian.',
+      title: 'Pilih Pasokan Grosir (MOQ)',
+      desc: 'Pilih varian Air Dus 220ml (Minimal 10 Dus) atau Air Galon 19L (Minimal 5 Galon) sesuai kebutuhan stok toko Anda.',
       icon: ShoppingBag,
     },
     {
       num: '02',
-      title: 'Kirim Pesanan via WhatsApp',
-      desc: 'Gunakan formulir online di website kami atau kirim pesan singkat ke WhatsApp admin dengan mencantumkan alamat di Makassar.',
-      icon: MessageSquare,
+      title: 'Isi Data Toko & PIC',
+      desc: 'Lengkapi Nama Toko/Minimarket, Nama PIC, No. WhatsApp, dan alamat pengantaran toko melalui formulir B2B di website.',
+      icon: Store,
     },
     {
       num: '03',
-      title: 'Konfirmasi & Pengantaran',
-      desc: 'Admin kami segera merespons dan kurir sigap mengantarkan air mineral langsung sampai ke teras atau dispenser Anda.',
+      title: 'Konfirmasi Kirim Armada',
+      desc: 'Admin distributor memverifikasi pesanan & jadwal rute armada pengantar internal langsung membongkar pasokan di toko Anda.',
       icon: Truck,
     },
     {
       num: '04',
       title: 'Pembayaran Fleksibel',
-      desc: 'Bayar dengan praktis saat air tiba menggunakan Scan QRIS, transfer bank (BCA/Mandiri/BRI), atau pembayaran tunai (COD).',
+      desc: 'Bayar saat armada tiba menggunakan Scan QRIS Dinamis, Transfer Bank Resmi (BCA), atau Tunai (COD).',
       icon: CreditCard,
     },
   ];
@@ -54,15 +54,19 @@ export const HowToOrderView: React.FC<HowToOrderViewProps> = ({ onNavigate, onOp
             Beranda
           </button>
           <ChevronRight className="w-3.5 h-3.5 text-[#c1c6d7]" />
-          <span className="text-[#007AFF] font-semibold">Cara Pesan</span>
+          <span className="text-[#007AFF] font-semibold">Alur Pemesanan Toko</span>
         </nav>
 
         <div className="max-w-3xl">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 text-[#007AFF] text-xs font-bold font-sora mb-3">
+            <Building2 className="w-3.5 h-3.5" />
+            <span>Panduan Pasokan Toko & Minimarket (B2B)</span>
+          </div>
           <h1 className="text-[38px] sm:text-[48px] font-bold text-[#191c1e] font-sora mb-3 tracking-[-0.03em]">
-            Cara Pemesanan
+            Alur Pemesanan Pasokan Grosir
           </h1>
           <p className="text-[17px] sm:text-[18px] text-[#414755] leading-relaxed">
-            Proses 4 langkah mudah untuk mendapatkan pasokan air minum segar Radar Mineral langsung di depan pintu rumah Anda di Makassar.
+            4 langkah mudah bagi pemilik Toko Bahan Campuran, Minimarket, dan Grosir untuk memesan pasokan rutin air mineral bergaransi di Kota Makassar.
           </p>
         </div>
       </section>
@@ -97,7 +101,7 @@ export const HowToOrderView: React.FC<HowToOrderViewProps> = ({ onNavigate, onOp
 
                 <div className="pt-6 mt-6 border-t border-gray-100 flex items-center text-xs text-[#007AFF] font-semibold">
                   <CheckCircle2 className="w-4 h-4 mr-1.5" />
-                  <span>Proses Cepat & Terverifikasi</span>
+                  <span>Proses Distributor Resmi</span>
                 </div>
               </div>
             );
@@ -110,7 +114,7 @@ export const HowToOrderView: React.FC<HowToOrderViewProps> = ({ onNavigate, onOp
             onClick={onOpenOrder}
             className="px-8 py-4 bg-[#007AFF] hover:bg-[#0062cc] text-white font-bold rounded-xl text-[16px] shadow-lg shadow-[#007AFF]/25 transition-all hover:scale-102 cursor-pointer"
           >
-            Mulai Pesan Sekarang
+            Mulai Order Grosir Sekarang
           </button>
         </div>
       </section>
@@ -121,13 +125,13 @@ export const HowToOrderView: React.FC<HowToOrderViewProps> = ({ onNavigate, onOp
           <div className="max-w-2xl mx-auto text-center mb-10">
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-green-50 text-green-700 rounded-full text-xs font-semibold mb-3">
               <MapPin className="w-3.5 h-3.5" />
-              <span>Cakupan Pengantaran Resmi</span>
+              <span>Rute Armada Distribusi Toko</span>
             </div>
             <h2 className="text-[28px] sm:text-[34px] font-bold text-[#191c1e] font-sora mb-3">
-              Cek Area Pengantaran di Makassar
+              Cek Area Pengantaran Toko di Makassar
             </h2>
             <p className="text-[#414755] text-[15px]">
-              Ketik kecamatan tempat tinggal Anda untuk memastikan ketersediaan armada kurir.
+              Ketik kecamatan lokasi toko Anda untuk memastikan jadwal rute armada pengantaran.
             </p>
 
             {/* District Search */}
@@ -135,7 +139,7 @@ export const HowToOrderView: React.FC<HowToOrderViewProps> = ({ onNavigate, onOp
               <Search className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
-                placeholder="Cari kecamatan (contoh: Panakkukang, Tamalanrea)..."
+                placeholder="Cari kecamatan toko (contoh: Panakkukang, Tamalanrea)..."
                 value={searchDistrict}
                 onChange={(e) => setSearchDistrict(e.target.value)}
                 className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#007AFF]"
@@ -157,7 +161,7 @@ export const HowToOrderView: React.FC<HowToOrderViewProps> = ({ onNavigate, onOp
 
           {matchedDistricts.length === 0 && (
             <p className="text-center text-sm text-gray-500 mt-4">
-              Kecamatan tidak ditemukan dalam daftar utama. Jangan khawatir, hubungi admin WhatsApp untuk verifikasi rute khusus.
+              Kecamatan tidak ditemukan dalam daftar utama. Hubungi admin WhatsApp kami untuk konfirmasi jadwal rute khusus toko Anda.
             </p>
           )}
         </div>
@@ -165,3 +169,4 @@ export const HowToOrderView: React.FC<HowToOrderViewProps> = ({ onNavigate, onOp
     </div>
   );
 };
+

@@ -51,6 +51,7 @@ export async function isCurrentUserAdmin(): Promise<boolean> {
 // ==============================================================================
 
 export interface AdminOrderItem {
+  productId?: string;
   productName: string;
   quantity: number;
   unitPrice: number;
@@ -60,6 +61,7 @@ export interface AdminOrderItem {
 export interface AdminOrderRow {
   id: string;
   orderCode: string;
+  storeName?: string; // Nama Toko / Minimarket / Usaha (B2B)
   customerName: string;
   phone: string;
   address: string;
@@ -67,8 +69,20 @@ export interface AdminOrderRow {
   notes: string;
   paymentMethod: string;
   paymentStatus: string;
+  paymentReference?: string;
+  adminNotes?: string;
+  amountPaid?: number;
   status: OrderStatus;
   total: number;
+  timelineData?: {
+    baruAt?: string;
+    diprosesAt?: string;
+    dikirimAt?: string;
+    selesaiAt?: string;
+    batalAt?: string;
+    eta?: string;
+  };
+  etaText?: string;
   createdAt: string;
   updatedAt: string;
   items: AdminOrderItem[];
@@ -93,18 +107,25 @@ export async function fetchAllOrders(): Promise<AdminOrderRow[]> {
   return (data || []).map((o: any) => ({
     id: o.id,
     orderCode: o.order_code,
+    storeName: o.store_name || '',
     customerName: o.customer_name,
     phone: o.phone,
     address: o.address,
     district: o.district,
     notes: o.notes || '',
     paymentMethod: o.payment_method,
-    paymentStatus: o.payment_status,
+    paymentStatus: o.payment_status || 'Belum Dibayar',
+    paymentReference: o.payment_reference || '',
+    adminNotes: o.admin_notes || '',
+    amountPaid: o.amount_paid || 0,
     status: o.status,
     total: o.total,
+    timelineData: o.timeline_data || { baruAt: o.created_at },
+    etaText: o.eta_text || '',
     createdAt: o.created_at,
     updatedAt: o.updated_at || o.created_at,
     items: (o.order_items || []).map((it: any) => ({
+      productId: it.product_id,
       productName: it.product_name,
       quantity: it.quantity,
       unitPrice: it.unit_price,
@@ -113,22 +134,67 @@ export async function fetchAllOrders(): Promise<AdminOrderRow[]> {
   }));
 }
 
-export async function updateOrderStatus(orderId: string, status: OrderStatus): Promise<void> {
+export async function updateOrderStatus(
+  orderId: string,
+  status: OrderStatus,
+  etaText?: string,
+  currentTimeline?: Record<string, any>
+): Promise<void> {
   if (!supabase) throw new Error('Supabase belum dikonfigurasi.');
-  const { error } = await supabase.from('orders').update({ status }).eq('id', orderId);
+
+  const nowIso = new Date().toISOString();
+  const updatedTimeline = {
+    ...(currentTimeline || {}),
+  };
+
+  if (status === 'diproses' && !updatedTimeline.diprosesAt) {
+    updatedTimeline.diprosesAt = nowIso;
+  } else if (status === 'dikirim') {
+    updatedTimeline.dikirimAt = nowIso;
+    if (etaText) updatedTimeline.eta = etaText;
+  } else if (status === 'selesai') {
+    updatedTimeline.selesaiAt = nowIso;
+  } else if (status === 'batal') {
+    updatedTimeline.batalAt = nowIso;
+  }
+
+  const updatePayload: Record<string, any> = {
+    status,
+    timeline_data: updatedTimeline,
+  };
+
+  if (etaText !== undefined) {
+    updatePayload.eta_text = etaText;
+  }
+
+  const { error } = await supabase.from('orders').update(updatePayload).eq('id', orderId);
   if (error) throw error;
 }
 
-export async function updatePaymentStatus(orderId: string, paymentStatus: string): Promise<void> {
+export async function updatePaymentStatus(
+  orderId: string,
+  paymentStatus: string,
+  paymentReference?: string,
+  amountPaid?: number
+): Promise<void> {
   if (!supabase) throw new Error('Supabase belum dikonfigurasi.');
-  const { error } = await supabase.from('orders').update({ payment_status: paymentStatus }).eq('id', orderId);
+  
+  const updatePayload: Record<string, any> = { payment_status: paymentStatus };
+  if (paymentReference !== undefined) updatePayload.payment_reference = paymentReference;
+  if (amountPaid !== undefined) updatePayload.amount_paid = amountPaid;
+
+  const { error } = await supabase.from('orders').update(updatePayload).eq('id', orderId);
+  if (error) throw error;
+}
+
+export async function updateAdminNotes(orderId: string, adminNotes: string): Promise<void> {
+  if (!supabase) throw new Error('Supabase belum dikonfigurasi.');
+  const { error } = await supabase.from('orders').update({ admin_notes: adminNotes }).eq('id', orderId);
   if (error) throw error;
 }
 
 // Realtime: dashboard admin auto-refresh begitu ada pesanan baru masuk atau status
 // berubah (dari device lain), tanpa perlu klik refresh manual.
-// Ini AMAN dipakai di sisi admin karena RLS "admin bisa lihat semua pesanan" berlaku
-// juga untuk koneksi realtime - staff yang bukan admin tidak akan menerima event apapun.
 export function subscribeToOrderChanges(onChange: () => void): () => void {
   if (!supabase) return () => {};
 
@@ -143,3 +209,4 @@ export function subscribeToOrderChanges(onChange: () => void): () => void {
     supabase.removeChannel(channel);
   };
 }
+

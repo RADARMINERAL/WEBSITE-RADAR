@@ -15,136 +15,87 @@ export const ADDRESS_DISPLAY = 'Dapoko, Ulugalung, Kec. Eremerasa, Kabupaten Ban
 
 export const PRODUCTS: Product[] = [
   {
-    id: 'galon-19l',
-    name: 'Galon 19 Liter',
-    category: 'galon',
-    badge: 'Best Seller',
-    image: GALLON_IMAGE,
-    description: 'Air mineral murni dalam kemasan galon standar, ideal untuk konsumsi keluarga harian.',
-    capacity: '19 Liter',
-    features: [
-      'Kapasitas 19 Liter',
-      'Tutup standar kedap udara',
-      'Proses higienis terjamin',
-      'Sterilisasi multi-tahap ozon & UV',
-    ],
-    priceDescription: 'Hubungi Admin untuk Harga',
-    estimatedPrice: 18000,
-    popular: true,
-  },
-  {
-    id: 'dus-600ml',
-    name: 'Air Dus (600ml)',
-    category: 'dus',
-    badge: 'Populer',
-    image: BOX_IMAGE,
-    description: 'Praktis dan mudah dibawa, pilihan tepat untuk acara, rapat, atau bepergian.',
-    capacity: '600ml (24 Botol)',
-    features: [
-      'Isi 24 botol per dus',
-      'Ukuran praktis 600ml',
-      'Cocok untuk berbagai acara & kantor',
-      'Botol ramah lingkungan & food-grade',
-    ],
-    priceDescription: 'Hubungi Admin untuk Harga',
-    estimatedPrice: 48000,
-    popular: true,
-  },
-  {
     id: 'dus-220ml',
     name: 'Air Kemasan Cup (220ml)',
     category: 'dus',
-    badge: 'Ekonomis',
+    badge: 'B2B Grosir • Min. 10 Dus',
     image: BOX_IMAGE,
-    description: 'Kemasan gelas/cup higienis dengan sedotan terpisah, sangat praktis untuk jamuan tamu dan hajatan.',
-    capacity: '220ml (48 Cup)',
+    description: 'Air mineral kemasan cup 220ml isi 48 cup per dus. Pilihan utama untuk toko bahan campuran, minimarket (Alfamart/Indomaret), dan toko grosir.',
+    capacity: '220ml (48 Cup per Dus)',
     features: [
-      'Isi 48 cup per dus',
-      'Segel higienis anti-bocor',
-      'Termasuk sedotan higienis',
-      'Cocok untuk konsumsi massal & pesta',
+      'Isi 48 cup per dus (Kardus tebal)',
+      'Minimal pemesanan (MOQ): 10 Dus',
+      'Segel higienis anti-bocor & sedotan higienis',
+      'Cocok untuk stok dagangan toko & minimarket',
     ],
-    priceDescription: 'Hubungi Admin untuk Harga',
-    estimatedPrice: 32000,
+    priceDescription: 'Hubungi Admin untuk Harga Grosir',
+    estimatedPrice: 30000,
+    popular: true,
+    minOrder: 10,
   },
   {
-    id: 'dus-330ml',
-    name: 'Air Botol Mini (330ml)',
-    category: 'dus',
-    badge: 'Elegan',
-    image: BOX_IMAGE,
-    description: 'Ukuran mini premium yang elegan untuk meeting room direksi, seminar hotel, dan restoran.',
-    capacity: '330ml (24 Botol)',
+    id: 'galon-19l',
+    name: 'Air Galon 19 Liter',
+    category: 'galon',
+    badge: 'B2B Grosir • Min. 5 Galon',
+    image: GALLON_IMAGE,
+    description: 'Air mineral murni dalam kemasan galon 19L higienis. Pasokan rutin untuk toko kelontong, minimarket, pangkalan galon, dan usaha.',
+    capacity: '19 Liter per Galon',
     features: [
-      'Isi 24 botol per dus',
-      'Desain botol ringkas & elegan',
-      'Pas untuk sajian tamu VIP',
-      'Standar kemasan premium',
+      'Kapasitas 19 Liter standar',
+      'Minimal pemesanan (MOQ): 5 Galon',
+      'Tutup segel ganda higienis anti-bocor',
+      'Layanan tukar galon kosong / beli galon baru',
     ],
-    priceDescription: 'Hubungi Admin untuk Harga',
-    estimatedPrice: 42000,
-  },
-  {
-    id: 'dus-1500ml',
-    name: 'Air Botol Jumbo (1500ml)',
-    category: 'dus',
-    badge: 'Keluarga',
-    image: BOX_IMAGE,
-    description: 'Botol ukuran besar untuk kebutuhan hidrasi maksimal saat piknik, perjalanan jauh, atau olahraga.',
-    capacity: '1500ml (12 Botol)',
-    features: [
-      'Isi 12 botol per dus',
-      'Kapasitas besar 1.5 Liter',
-      'Pilihan ekonomis untuk bepergian',
-      'Tutup segel ganda ekstra aman',
-    ],
-    priceDescription: 'Hubungi Admin untuk Harga',
-    estimatedPrice: 52000,
+    priceDescription: 'Hubungi Admin untuk Harga Grosir',
+    estimatedPrice: 18000,
+    popular: true,
+    minOrder: 5,
   }
 ];
 
 export const FAQ_ITEMS: FaqItem[] = [
   {
     id: 'faq-1',
-    category: 'pengiriman',
-    question: 'Apakah Radar Mineral melayani pengiriman ke seluruh area Makassar?',
-    answer: 'Ya, kami melayani pengiriman ke sebagian besar wilayah di Kota Makassar (Panakkukang, Rappocini, Tamalanrea, Biringkanaya, Ujung Pandang, Makassar, Mamajang, Mariso, Wajo, Bontoala, Tallo, Manggala, Tamalate). Untuk memastikan apakah alamat spesifik Anda terjangkau layanan antar gratis, silakan hubungi admin kami melalui WhatsApp.'
+    category: 'pemesanan',
+    question: 'Berapa batas minimal pemesanan (MOQ) untuk toko / pelanggan B2B?',
+    answer: 'Sebagai penyedia air minum khusus B2B grosir, batas minimal pemesanan kami adalah: Minimal 10 Dus untuk Air Kemasan Cup 220ml (isi 48 cup) dan Minimal 5 Galon untuk Air Galon 19 Liter.'
   },
   {
     id: 'faq-2',
     category: 'pemesanan',
-    question: 'Berapa minimal pemesanan untuk layanan antar?',
-    answer: 'Untuk menikmati layanan pesan antar langsung ke rumah Anda, minimal pemesanan adalah 2 galon (19L) atau 2 dus per titik pengiriman di area reguler Makassar.'
+    question: 'Siapa saja pelanggan yang dilayani oleh Radar Mineral?',
+    answer: 'Kami fokus melayani segmen B2B seperti toko bahan campuran, rantai minimarket (Alfamart, Indomaret), toko grosir sembako, warung kelontong, pangkalan air, serta kebutuhan operasional instansi dan usaha di Makassar.'
   },
   {
     id: 'faq-3',
-    category: 'produk',
-    question: 'Apakah ada biaya deposit untuk pelanggan baru?',
-    answer: 'Bagi pelanggan baru yang belum memiliki galon kosong untuk ditukar, akan dikenakan biaya deposit sebesar Rp 40.000 per Galon 19L. Uang deposit ini dapat dikembalikan penuh jika Anda mengembalikan galon dalam kondisi baik saat berhenti berlangganan.'
+    category: 'pengiriman',
+    question: 'Apakah Radar Mineral melayani pengiriman langsung ke toko di seluruh Makassar?',
+    answer: 'Ya, armada kurir internal kami siap mengantarkan pasokan air langsung ke lokasi toko Anda di seluruh kecamatan Kota Makassar (Panakkukang, Rappocini, Tamalanrea, Biringkanaya, Ujung Pandang, dan sekitarnya).'
   },
   {
     id: 'faq-4',
-    category: 'pengiriman',
-    question: 'Berapa lama waktu pengiriman setelah memesan?',
-    answer: 'Pesanan yang dikonfirmasi sebelum jam 15:00 WITA akan dikirimkan pada hari yang sama. Untuk pesanan setelah jam tersebut, pengiriman akan dijadwalkan pada keesokan harinya (H+1) mulai pukul 08:00 WITA.'
+    category: 'pembayaran',
+    question: 'Metode pembayaran apa saja yang tersedia untuk pesanan grosir?',
+    answer: 'Kami menerima pembayaran via Scan QRIS saat kurir tiba di toko, Transfer Bank resmi (BCA, Mandiri, BRI), serta Tunai/COD saat barang diterima. Untuk pelanggan baru yang belum terverifikasi, diberlakukan pembayaran di muka atau DP.'
   },
   {
     id: 'faq-5',
     category: 'pembayaran',
-    question: 'Metode pembayaran apa saja yang tersedia?',
-    answer: 'Kami mendukung transaksi non-tunai demi kenyamanan Anda. Pembayaran dapat dilakukan via scan QRIS saat kurir tiba atau melalui Transfer Bank. Pembayaran tunai (COD) juga masih kami layani jika Anda menghendaki.'
+    question: 'Apakah admin menyediakan nota / invoice untuk pembukuan toko?',
+    answer: 'Tentu. Setiap pesanan dapat dicetak menjadi dokumen invoice resmi sederhana yang memuat rincian produk, kuantitas, harga, dan total belanja untuk memudahkan pencatatan pembukuan toko Anda.'
   },
   {
     id: 'faq-6',
-    category: 'pemesanan',
-    question: 'Apakah melayani pesanan langganan rutin untuk kantor atau instansi?',
-    answer: 'Tentu saja! Kami memiliki program langganan korporat & kantor dengan jadwal pengantaran terjadwal otomatis (misalnya setiap Senin & Kamis), faktur pajak resmi, dan harga khusus volume tinggi.'
+    category: 'produk',
+    question: 'Bagaimana ketentuan penukaran galon 19L untuk toko mitra baru?',
+    answer: 'Untuk toko yang sudah memiliki galon kosong layak pakai, sistemnya adalah tukar galon kosong murni (hanya membayar isi ulang). Bagi toko yang baru membuka stok galon dan belum memiliki galon kosong, dikenakan biaya deposit/pembelian galon baru.'
   },
   {
     id: 'faq-7',
-    category: 'produk',
-    question: 'Bagaimana standar sterilisasi galon dan air di Radar Mineral?',
-    answer: 'Setiap galon melewati 7 tahap pencucian dan sterilisasi bersuhu tinggi, pembilasan dengan air murni, ozonisasi, dan penyinaran sinar Ultra Violet (UV) sebelum pengisian otomatis tanpa kontak tangan manusia.'
+    category: 'pengiriman',
+    question: 'Berapa lama estimasi waktu pengantaran armada ke toko?',
+    answer: 'Pesanan yang masuk akan dijadwalkan oleh armada kami. Saat status pesanan berubah menjadi "Dikirim", admin akan menyertakan estimasi waktu tiba (ETA) yang dapat Anda pantau langsung dari menu pelacakan status pesanan.'
   }
 ];
 
@@ -163,3 +114,4 @@ export const MAKASSAR_DISTRICTS = [
   'Manggala',
   'Tamalate'
 ];
+

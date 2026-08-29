@@ -12,6 +12,7 @@ export interface Product {
   priceDescription: string;
   estimatedPrice?: number;
   popular?: boolean;
+  minOrder?: number; // Minimum Order Quantity (B2B MOQ)
 }
 
 export interface FaqItem {
@@ -31,20 +32,36 @@ export interface OrderItem {
 
 export type OrderStatus = 'baru' | 'diproses' | 'dikirim' | 'selesai' | 'batal';
 
+export interface OrderTimeline {
+  baruAt?: string;
+  diprosesAt?: string;
+  dikirimAt?: string;
+  selesaiAt?: string;
+  batalAt?: string;
+  eta?: string;
+}
+
 export interface OrderRecord {
   id: string;
   orderCode: string;
-  customerName: string;
+  storeName?: string; // Nama Toko / Minimarket / Usaha (B2B)
+  customerName: string; // PIC / Nama Pemesan
   phone: string;
   address: string;
   district: string;
   notes?: string;
   paymentMethod: 'qris' | 'transfer' | 'cod';
-  paymentStatus?: string;
+  paymentStatus?: string; // 'Belum Dibayar' | 'Sudah Dibayar' | 'DP (Sebagian)'
+  paymentReference?: string; // No. Ref / Catatan transfer
+  adminNotes?: string; // Catatan internal admin
+  amountPaid?: number; // Jumlah yang sudah dibayar jika DP
   status: OrderStatus | string;
   total: number;
   createdAt: string;
+  updatedAt?: string;
+  timeline?: OrderTimeline;
   items: {
+    product_id?: string;
     product_name?: string;
     name?: string;
     quantity?: number;
@@ -55,13 +72,16 @@ export interface OrderRecord {
 }
 
 export interface OrderForm {
-  name: string;
+  storeName?: string; // Nama Toko / Usaha (B2B)
+  name: string; // PIC / Penanggung Jawab
   phone: string;
   address: string;
   district: string; // Kecamatan
   notes: string;
   paymentMethod: 'qris' | 'transfer' | 'cod';
   paymentStatus?: string;
+  paymentReference?: string;
   items: OrderItem[];
 }
+
 

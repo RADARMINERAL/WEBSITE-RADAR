@@ -126,8 +126,30 @@ export interface CreateOrderParams {
 
 export async function createOrder(
   params: CreateOrderParams
-): Promise<{ orderCode: string; orderId: string; total: number; success: boolean; savedToDatabase: boolean }> {
+): Promise<{ orderCode: string; orderId: string; total: number; success: boolean; savedToDatabase: boolean; error?: string }> {
   const { form, total, exchangeGallon } = params;
+
+  // Penegakan MOQ B2B sisi data layer
+  let hasValidMOQ = false;
+  for (const item of form.items) {
+    if (item.productId === 'dus-220ml' && item.quantity >= 10) {
+      hasValidMOQ = true;
+    }
+    if (item.productId === 'galon-19l' && item.quantity >= 5) {
+      hasValidMOQ = true;
+    }
+  }
+
+  if (!hasValidMOQ) {
+    return {
+      orderId: '',
+      orderCode: '',
+      total: 0,
+      success: false,
+      savedToDatabase: false,
+      error: 'Pesanan tidak memenuhi syarat Minimum Order Quantity (MOQ): Minimal 10 Dus untuk Cup 220ml atau Minimal 5 Galon.',
+    };
+  }
 
   // Helper UUID generator yang kompatibel dengan semua browser modern
   const generateUUID = () => {
@@ -141,26 +163,33 @@ export async function createOrder(
     });
   };
 
+  const nowIso = new Date().toISOString();
   const orderId = generateUUID();
   const orderCode = 'RDR-' + Math.floor(100000 + Math.random() * 900000);
   let savedToDatabase = false;
 
-  // Simpan nomor telepon ke localStorage agar riwayat pesanan mudah dicek kembali
+  const initialTimeline = {
+    baruAt: nowIso,
+  };
+
+  // Simpan data toko & nomor telepon ke localStorage agar riwayat pesanan mudah dicek kembali
   if (form.phone) {
     localStorage.setItem('radar_customer_phone', form.phone.trim());
     localStorage.setItem('radar_customer_name', form.name.trim());
+    if (form.storeName) localStorage.setItem('radar_customer_store', form.storeName.trim());
     localStorage.setItem('radar_customer_address', form.address.trim());
     localStorage.setItem('radar_customer_district', form.district);
   }
 
   if (supabase) {
     try {
-      // 1. Insert ke tabel orders langsung dengan ID dan Kode Pesanan
+      // 1. Insert ke tabel orders langsung dengan ID, Kode Pesanan, dan B2B Data
       const { error: orderError } = await supabase
         .from('orders')
         .insert({
           id: orderId,
           order_code: orderCode,
+          store_name: form.storeName?.trim() || null,
           customer_name: form.name.trim(),
           phone: form.phone.trim(),
           address: form.address.trim(),
@@ -168,6 +197,8 @@ export async function createOrder(
           notes: form.notes?.trim() || null,
           payment_method: form.paymentMethod,
           payment_status: form.paymentStatus || 'Belum Dibayar',
+          payment_reference: form.paymentReference?.trim() || null,
+          timeline_data: initialTimeline,
           status: 'baru',
           total: total,
         });
@@ -208,6 +239,7 @@ export async function createOrder(
   const localRecord: OrderRecord = {
     id: orderId,
     orderCode: orderCode,
+    storeName: form.storeName,
     customerName: form.name,
     phone: form.phone,
     address: form.address,
@@ -215,10 +247,13 @@ export async function createOrder(
     notes: form.notes,
     paymentMethod: form.paymentMethod,
     paymentStatus: form.paymentStatus || 'Belum Dibayar',
+    paymentReference: form.paymentReference,
     status: 'baru',
     total: total,
-    createdAt: new Date().toISOString(),
+    createdAt: nowIso,
+    timeline: initialTimeline,
     items: form.items.map((item) => ({
+      product_id: item.productId,
       product_name: item.productName,
       name: item.productName,
       quantity: item.quantity,
@@ -235,8 +270,7 @@ export async function createOrder(
     console.warn('LocalStorage save error:', e);
   }
 
-  // Simpan kode pesanan TERAKHIR yang benar-benar valid di database, supaya AccountModal
-  // bisa auto-isi phone + kode saat pelanggan yang sama kembali dari browser yang sama
+  // Simpan kode pesanan TERAKHIR yang benar-benar valid di database
   if (form.phone && savedToDatabase) {
     localStorage.setItem('radar_last_order_code', orderCode);
   }
@@ -245,8 +279,8 @@ export async function createOrder(
     orderId,
     orderCode,
     total,
-    success: true, // proses checkout selesai: order minimal tersimpan di perangkat ini
-    savedToDatabase, // true HANYA kalau order benar-benar tersimpan ke Supabase
+    success: true,
+    savedToDatabase,
   };
 }
 
@@ -270,6 +304,7 @@ export async function getMyOrders(phone?: string, orderCode?: string): Promise<O
         return data.map((row: any) => ({
           id: row.id,
           orderCode: row.order_code || row.orderCode || 'RDR-000000',
+          storeName: row.store_name || row.storeName || '',
           customerName: row.customer_name || row.customerName || '',
           phone: row.phone || '',
           address: row.address || '',
@@ -277,8 +312,11 @@ export async function getMyOrders(phone?: string, orderCode?: string): Promise<O
           notes: row.notes || '',
           paymentMethod: row.payment_method || row.paymentMethod || 'qris',
           paymentStatus: row.payment_status || row.paymentStatus || 'Belum Dibayar',
+          paymentReference: row.payment_reference || row.paymentReference || '',
           status: row.status || 'baru',
           total: row.total || 0,
+          timeline: row.timeline_data || row.timeline || { baruAt: row.created_at },
+          etaText: row.eta_text || row.etaText || '',
           createdAt: row.created_at || row.createdAt || new Date().toISOString(),
           items: Array.isArray(row.items) ? row.items : [],
         }));
@@ -296,16 +334,19 @@ export async function getMyOrders(phone?: string, orderCode?: string): Promise<O
       return parsed.map((item) => ({
         id: item.id || item.orderCode || 'RDR-LOCAL',
         orderCode: item.orderCode || item.id || 'RDR-LOCAL',
-        customerName: item.name || item.customerName || 'Pelanggan',
+        storeName: item.storeName || item.store_name || '',
+        customerName: item.customerName || item.name || 'Pelanggan Toko',
         phone: item.phone || '',
         address: item.address || '',
         district: item.district || '',
         notes: item.notes || '',
-        paymentMethod: item.paymentMethod || 'qris',
-        paymentStatus: item.paymentStatus || 'Belum Dibayar',
+        paymentMethod: item.paymentMethod || item.payment_method || 'qris',
+        paymentStatus: item.paymentStatus || item.payment_status || 'Belum Dibayar',
+        paymentReference: item.paymentReference || item.payment_reference || '',
         status: item.status || 'baru',
         total: item.total || 0,
-        createdAt: item.date || item.createdAt || new Date().toISOString(),
+        timeline: item.timeline || { baruAt: item.createdAt || item.date },
+        createdAt: item.createdAt || item.date || new Date().toISOString(),
         items: Array.isArray(item.items) ? item.items : [],
       }));
     }
@@ -315,6 +356,7 @@ export async function getMyOrders(phone?: string, orderCode?: string): Promise<O
 
   return [];
 }
+
 
 // ==============================================================================
 // 5. HELPER FORMAT STATUS PESANAN
