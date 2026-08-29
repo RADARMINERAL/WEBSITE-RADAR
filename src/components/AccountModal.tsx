@@ -54,6 +54,20 @@ export const AccountModal: React.FC<AccountModalProps> = ({
     }
   }, [isOpen]);
 
+  // Auto-refresh status pesanan tiap 20 detik selagi modal terbuka & sudah ada hasil
+  // pencarian, supaya pelanggan lihat perubahan status tanpa klik "Perbarui Data" manual.
+  // Ini polling, bukan realtime push - RLS sengaja TIDAK mengizinkan baca publik ke
+  // tabel orders (supaya pesanan orang lain tidak bisa dibaca sembarangan), jadi
+  // update di sini tetap lewat RPC get_my_orders yang sudah diverifikasi phone+kode.
+  useEffect(() => {
+    if (!isOpen || !hasSearched || !phone || !orderCode) return;
+    const interval = setInterval(() => {
+      loadOrders(phone, orderCode);
+    }, 20000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, hasSearched, phone, orderCode]);
+
   if (!isOpen) return null;
 
   const handleSearchPhone = (e: React.FormEvent) => {

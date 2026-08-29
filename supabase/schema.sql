@@ -53,6 +53,34 @@ create table if not exists orders (
 -- Pastikan kolom payment_status ada jika tabel orders sudah pernah dibuat sebelumnya
 alter table orders add column if not exists payment_status text not null default 'Belum Dibayar';
 
+-- Kolom updated_at, supaya kelihatan kapan status pesanan terakhir diubah admin
+alter table orders add column if not exists updated_at timestamptz not null default now();
+
+create or replace function public.set_updated_at()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
+drop trigger if exists orders_set_updated_at on orders;
+create trigger orders_set_updated_at
+  before update on orders
+  for each row execute function public.set_updated_at();
+
+-- 3b. TABEL ADMINS (Staff yang boleh mengelola pesanan)
+-- Diisi manual lewat SQL editor / dashboard Supabase oleh pemilik project -
+-- SENGAJA tidak ada policy insert/update/delete supaya tidak bisa self-service.
+create table if not exists admins (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  name text,
+  created_at timestamptz default now()
+);
+
 -- 4. TABEL ORDER_ITEMS (Rincian Item Per Pesanan)
 create table if not exists order_items (
   id uuid primary key default gen_random_uuid(),
@@ -74,12 +102,17 @@ alter table products enable row level security;
 alter table faq_items enable row level security;
 alter table orders enable row level security;
 alter table order_items enable row level security;
+alter table admins enable row level security;
 
 -- Hapus policy lama jika ada untuk mencegah duplikasi saat re-run
 drop policy if exists "produk publik" on products;
 drop policy if exists "faq publik" on faq_items;
 drop policy if exists "siapapun bisa checkout" on orders;
 drop policy if exists "siapapun bisa isi item pesanan" on order_items;
+drop policy if exists "admin bisa lihat dirinya sendiri" on admins;
+drop policy if exists "admin bisa lihat semua pesanan" on orders;
+drop policy if exists "admin bisa update pesanan" on orders;
+drop policy if exists "admin bisa lihat semua item pesanan" on order_items;
 
 -- Policy 1: Produk aktif dapat dibaca oleh publik (website & aplikasi)
 create policy "produk publik" on products
@@ -96,6 +129,31 @@ create policy "siapapun bisa checkout" on orders
 -- Policy 4: Item pesanan dapat dimasukkan saat checkout
 create policy "siapapun bisa isi item pesanan" on order_items
   for insert with check (true);
+
+-- Policy 5: User hanya bisa melihat baris admin miliknya sendiri (buat cek "apakah saya admin")
+create policy "admin bisa lihat dirinya sendiri" on admins
+  for select using (auth.uid() = user_id);
+
+-- Policy 6: Admin (terdaftar di tabel admins) boleh lihat SEMUA pesanan
+create policy "admin bisa lihat semua pesanan" on orders
+  for select using (exists (select 1 from admins where admins.user_id = auth.uid()));
+
+-- Policy 7: Admin boleh ubah status / status pembayaran pesanan
+create policy "admin bisa update pesanan" on orders
+  for update using (exists (select 1 from admins where admins.user_id = auth.uid()))
+  with check (exists (select 1 from admins where admins.user_id = auth.uid()));
+
+-- Policy 8: Admin boleh lihat rincian item tiap pesanan
+create policy "admin bisa lihat semua item pesanan" on order_items
+  for select using (exists (select 1 from admins where admins.user_id = auth.uid()));
+
+-- Aktifkan Realtime di tabel orders, supaya dashboard admin auto-update tanpa refresh manual
+do $$
+begin
+  execute 'alter publication supabase_realtime add table orders';
+exception when duplicate_object then
+  null; -- sudah ditambahkan sebelumnya, aman diabaikan
+end $$;
 
 -- ==============================================================================
 -- SECURE STORED FUNCTIONS / RPC
@@ -125,6 +183,7 @@ returns table (
 )
 language plpgsql
 security definer
+set search_path = public
 as $$
 declare
   v_verified boolean;
