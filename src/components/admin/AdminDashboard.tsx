@@ -252,17 +252,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, onLo
         prev.map((o) =>
           o.id === order.id
             ? {
-                ...o,
-                status,
-                etaText: eta || o.etaText,
-                timelineData: {
-                  ...(o.timelineData || {}),
-                  ...(status === 'diproses' ? { diprosesAt: new Date().toISOString() } : {}),
-                  ...(status === 'dikirim' ? { dikirimAt: new Date().toISOString(), eta } : {}),
-                  ...(status === 'selesai' ? { selesaiAt: new Date().toISOString() } : {}),
-                  ...(status === 'batal' ? { batalAt: new Date().toISOString() } : {}),
-                },
-              }
+              ...o,
+              status,
+              etaText: eta || o.etaText,
+              timelineData: {
+                ...(o.timelineData || {}),
+                ...(status === 'diproses' ? { diprosesAt: new Date().toISOString() } : {}),
+                ...(status === 'dikirim' ? { dikirimAt: new Date().toISOString(), eta } : {}),
+                ...(status === 'selesai' ? { selesaiAt: new Date().toISOString() } : {}),
+                ...(status === 'batal' ? { batalAt: new Date().toISOString() } : {}),
+              },
+            }
             : o
         )
       );
@@ -288,11 +288,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, onLo
         prev.map((o) =>
           o.id === paymentEditOrder.id
             ? {
-                ...o,
-                paymentStatus: editPaymentStatus,
-                paymentReference: editPaymentRef,
-                amountPaid: editAmountPaid,
-              }
+              ...o,
+              paymentStatus: editPaymentStatus,
+              paymentReference: editPaymentRef,
+              amountPaid: editAmountPaid,
+            }
             : o
         )
       );
@@ -372,16 +372,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, onLo
     const etaInfo = order.etaText ? `\n⏱️ *Estimasi Tiba (ETA):* *${order.etaText}*` : '';
 
     const message =
-      `🚚 *RADAR MINERAL — UPDATE PENGIRIMAN ARMADA*\n` +
+      `*RADAR MINERAL — UPDATE PENGIRIMAN ARMADA*\n` +
       `══════════════════════════════\n` +
       `Halo ${storeLabel},\n\n` +
       `Kabar baik! Pasokan air mineral pesanan Anda saat ini:\n` +
-      `🏷️ *Status:* *${STATUS_META[order.status]?.label || order.status.toUpperCase()}* 🚛` +
+      `*Status:* *${STATUS_META[order.status]?.label || order.status.toUpperCase()}* 🚛` +
       `${etaInfo}\n\n` +
       `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-      `📋 *Kode Pesanan:* \`${order.orderCode}\`\n` +
-      `📍 *Alamat Tujuan:* ${order.address} (${order.district})\n\n` +
-      `🛒 *Rincian Muatan:*\n` +
+      `*Kode Pesanan:* \`${order.orderCode}\`\n` +
+      `*Alamat Tujuan:* ${order.address} (${order.district})\n\n` +
+      `*Rincian Muatan:*\n` +
       `${itemsList}\n` +
       `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
       `Supir armada kami sedang dalam perjalanan menuju lokasi toko Anda. Mohon pastikan area penerimaan telah siap.\n\n` +
@@ -583,11 +583,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, onLo
           {/* Card 2: Total Piutang (Belum Lunas) - P0 PRIORITY */}
           <div
             onClick={() => setPaymentFilter('belum_lunas')}
-            className={`bg-white p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer shadow-xs flex items-center justify-between ${
-              paymentFilter === 'belum_lunas'
+            className={`bg-white p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer shadow-xs flex items-center justify-between ${paymentFilter === 'belum_lunas'
                 ? 'border-red-500 ring-2 ring-red-100 bg-red-50/20'
                 : 'border-gray-200 hover:border-red-300'
-            }`}
+              }`}
           >
             <div>
               <div className="flex items-center gap-1.5">
@@ -611,11 +610,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, onLo
           {/* Card 3: Total Lunas */}
           <div
             onClick={() => setPaymentFilter('lunas')}
-            className={`bg-white p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer shadow-xs flex items-center justify-between ${
-              paymentFilter === 'lunas'
+            className={`bg-white p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer shadow-xs flex items-center justify-between ${paymentFilter === 'lunas'
                 ? 'border-green-500 ring-2 ring-green-100 bg-green-50/20'
                 : 'border-gray-200 hover:border-green-300'
-            }`}
+              }`}
           >
             <div>
               <p className="text-xs font-semibold text-green-700 uppercase tracking-wider font-sora">
@@ -703,11 +701,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, onLo
               <button
                 key={tab.value}
                 onClick={() => setActiveTab(tab.value)}
-                className={`shrink-0 px-3.5 py-1.5 rounded-xl text-xs font-semibold border transition-colors cursor-pointer ${
-                  activeTab === tab.value
+                className={`shrink-0 px-3.5 py-1.5 rounded-xl text-xs font-semibold border transition-colors cursor-pointer ${activeTab === tab.value
                     ? 'bg-[#007AFF] text-white border-[#007AFF]'
                     : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
-                }`}
+                  }`}
               >
                 {tab.label} ({counts[tab.value] || 0})
               </button>
@@ -719,43 +716,39 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, onLo
             <span className="text-xs text-gray-400 font-semibold mr-1">Pembayaran:</span>
             <button
               onClick={() => setPaymentFilter('semua')}
-              className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors cursor-pointer ${
-                paymentFilter === 'semua'
+              className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors cursor-pointer ${paymentFilter === 'semua'
                   ? 'bg-gray-900 text-white'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
+                }`}
             >
               Semua
             </button>
             <button
               onClick={() => setPaymentFilter('belum_lunas')}
-              className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
-                paymentFilter === 'belum_lunas'
+              className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${paymentFilter === 'belum_lunas'
                   ? 'bg-red-600 text-white'
                   : 'bg-red-50 text-red-700 hover:bg-red-100'
-              }`}
+                }`}
             >
               <span className="w-2 h-2 rounded-full bg-red-400" />
               🔴 Belum Dibayar ({summaryStats.totalUnpaidCount})
             </button>
             <button
               onClick={() => setPaymentFilter('lunas')}
-              className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
-                paymentFilter === 'lunas'
+              className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${paymentFilter === 'lunas'
                   ? 'bg-green-600 text-white'
                   : 'bg-green-50 text-green-700 hover:bg-green-100'
-              }`}
+                }`}
             >
               <span className="w-2 h-2 rounded-full bg-green-400" />
               🟢 Lunas ({summaryStats.totalPaidCount})
             </button>
             <button
               onClick={() => setPaymentFilter('dp')}
-              className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors cursor-pointer ${
-                paymentFilter === 'dp'
+              className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors cursor-pointer ${paymentFilter === 'dp'
                   ? 'bg-amber-600 text-white'
                   : 'bg-amber-50 text-amber-800 hover:bg-amber-100'
-              }`}
+                }`}
             >
               🟡 DP (Sebagian)
             </button>
@@ -794,11 +787,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, onLo
               return (
                 <div
                   key={order.id}
-                  className={`bg-white rounded-2xl border p-4 sm:p-5 shadow-xs transition-all ${
-                    isUnpaid && order.status === 'selesai'
+                  className={`bg-white rounded-2xl border p-4 sm:p-5 shadow-xs transition-all ${isUnpaid && order.status === 'selesai'
                       ? 'border-red-300 bg-red-50/10'
                       : 'border-gray-200 hover:border-gray-300'
-                  }`}
+                    }`}
                 >
                   {/* Top Bar Card */}
                   <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
@@ -923,13 +915,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, onLo
                             setEditPaymentRef(order.paymentReference || '');
                             setEditAmountPaid(order.amountPaid || 0);
                           }}
-                          className={`px-3 py-1 rounded-full text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 shadow-xs ${
-                            order.paymentStatus === 'Sudah Dibayar'
+                          className={`px-3 py-1 rounded-full text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 shadow-xs ${order.paymentStatus === 'Sudah Dibayar'
                               ? 'bg-green-50 text-green-700 border-green-300 hover:bg-green-100'
                               : order.paymentStatus === 'DP (Sebagian)'
-                              ? 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'
-                              : 'bg-red-50 text-red-700 border-red-300 hover:bg-red-100'
-                          }`}
+                                ? 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'
+                                : 'bg-red-50 text-red-700 border-red-300 hover:bg-red-100'
+                            }`}
                           title="Klik untuk ubah status pembayaran / tambah no ref transfer"
                         >
                           <CreditCard className="w-3 h-3" />
@@ -1083,11 +1074,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, onLo
                   <p className="text-base font-bold font-mono text-gray-900 mt-1">{invoiceOrder.orderCode}</p>
                   <p className="text-gray-500 text-[11px]">Tanggal: {formatDate(invoiceOrder.createdAt)}</p>
                   <span
-                    className={`inline-block mt-2 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                      invoiceOrder.paymentStatus === 'Sudah Dibayar'
+                    className={`inline-block mt-2 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${invoiceOrder.paymentStatus === 'Sudah Dibayar'
                         ? 'bg-green-100 text-green-800 border border-green-300'
                         : 'bg-red-100 text-red-800 border border-red-300'
-                    }`}
+                      }`}
                   >
                     STATUS: {invoiceOrder.paymentStatus || 'BELUM LUNAS'}
                   </span>
@@ -1189,11 +1179,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, onLo
                     setSelectedEta(eta);
                     setCustomEta('');
                   }}
-                  className={`py-2 px-3 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
-                    selectedEta === eta && !customEta
+                  className={`py-2 px-3 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${selectedEta === eta && !customEta
                       ? 'bg-[#007AFF] text-white border-[#007AFF]'
                       : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
-                  }`}
+                    }`}
                 >
                   {eta}
                 </button>
