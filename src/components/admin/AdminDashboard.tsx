@@ -79,6 +79,16 @@ interface AdminDashboardProps {
   onLoggedOut: () => void;
 }
 
+const formatWhatsAppNumber = (phoneStr: string) => {
+  let digits = (phoneStr || '').replace(/[^0-9]/g, '');
+  if (digits.startsWith('0')) {
+    digits = '62' + digits.slice(1);
+  } else if (digits.startsWith('8')) {
+    digits = '62' + digits;
+  }
+  return digits;
+};
+
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, onLoggedOut }) => {
   const [orders, setOrders] = useState<AdminOrderRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -130,7 +140,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, onLo
     const counts: Record<string, number> = {};
     orders.forEach((o) => {
       if (o.status === 'batal' && o.phone) {
-        const cleanPhone = o.phone.replace(/[^0-9]/g, '');
+        const cleanPhone = formatWhatsAppNumber(o.phone);
         counts[cleanPhone] = (counts[cleanPhone] || 0) + 1;
       }
     });
@@ -310,9 +320,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, onLo
     }
   };
 
+  const formatWhatsAppNumber = (phoneStr: string) => {
+    let digits = (phoneStr || '').replace(/[^0-9]/g, '');
+    if (digits.startsWith('0')) {
+      digits = '62' + digits.slice(1);
+    } else if (digits.startsWith('8')) {
+      digits = '62' + digits;
+    }
+    return digits;
+  };
+
   // Follow-up Tagihan WhatsApp ke Toko / PIC (Requirement 1)
   const handleWhatsAppBilling = (order: AdminOrderRow) => {
-    const cleanPhone = order.phone.replace(/[^0-9]/g, '');
+    const waPhone = formatWhatsAppNumber(order.phone);
     const storeLabel = order.storeName ? `*${order.storeName}* (${order.customerName})` : `*${order.customerName}*`;
     const totalFormatted = formatCurrency(order.total);
 
@@ -329,7 +349,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, onLo
       `Terima kasih atas kerja sama dan kepercayaannya!`;
 
     const encoded = encodeURIComponent(message);
-    window.open(`https://wa.me/${cleanPhone}?text=${encoded}`, '_blank');
+    window.open(`https://wa.me/${waPhone}?text=${encoded}`, '_blank');
   };
 
   // Requirement 5.5 & 5.6: Generate & Unduh Laporan Excel / CSV
@@ -716,8 +736,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, onLo
               const nextStatus =
                 nextIdx >= 0 && nextIdx < STATUS_FLOW.length - 1 ? STATUS_FLOW[nextIdx + 1] : null;
               const isFinal = order.status === 'batal' || order.status === 'selesai';
-              const cleanPhone = order.phone.replace(/[^0-9]/g, '');
-              const cancelCount = cancelCountsByPhone[cleanPhone] || 0;
+              const waPhone = formatWhatsAppNumber(order.phone);
+              const cancelCount = cancelCountsByPhone[waPhone] || 0;
 
               const isUnpaid = order.paymentStatus !== 'Sudah Dibayar';
 
@@ -791,7 +811,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, onLo
                     <div>
                       <span className="text-gray-400 block text-[10px]">Kontak WhatsApp:</span>
                       <a
-                        href={`https://wa.me/${cleanPhone}`}
+                        href={`https://wa.me/${waPhone}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="font-medium text-[#007AFF] hover:underline inline-flex items-center gap-1"
