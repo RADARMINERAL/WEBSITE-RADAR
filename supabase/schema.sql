@@ -261,8 +261,9 @@ $$;
 -- SEED DATA (DATA AWAL 2 PRODUK B2B GROSIR & FAQ)
 -- ==============================================================================
 
--- Nonaktifkan produk selain 2 produk utama jika sudah ada di database
-update products set is_active = false where id not in ('dus-220ml', 'galon-19l');
+-- Bersihkan & hapus permanen seluruh produk lama selain 2 produk resmi B2B
+update order_items set product_id = null where product_id not in ('dus-220ml', 'galon-19l');
+delete from products where id not in ('dus-220ml', 'galon-19l');
 
 -- Seed 2 Produk B2B
 insert into products (id, name, category, badge, image_url, description, capacity, features, price_description, estimated_price, popular, is_active)

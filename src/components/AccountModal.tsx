@@ -13,6 +13,7 @@ import {
   Building2,
   Truck,
   CheckCircle2,
+  Check,
   Hourglass,
   XCircle,
   Calendar,
