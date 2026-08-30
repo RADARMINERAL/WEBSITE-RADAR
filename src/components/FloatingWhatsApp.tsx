@@ -36,7 +36,7 @@ export const FloatingWhatsApp: React.FC<FloatingWhatsAppProps> = ({ onDirectOrde
           </div>
 
           <p className="text-[13px] text-gray-600 my-3 leading-relaxed">
-            Halo! Ada yang bisa kami bantu seputar pemesanan air minum di Makassar?
+            Layanan CS Distribusi B2B & Armada Toko Radar Mineral Makassar:
           </p>
 
           <div className="space-y-2">
@@ -45,29 +45,33 @@ export const FloatingWhatsApp: React.FC<FloatingWhatsAppProps> = ({ onDirectOrde
                 setIsOpen(false);
                 onDirectOrderClick();
               }}
-              className="w-full text-left px-3 py-2 text-[13px] font-medium bg-[#007AFF]/10 text-[#007AFF] hover:bg-[#007AFF]/20 rounded-xl transition-colors flex items-center justify-between"
+              className="w-full text-left px-3 py-2 text-[13px] font-semibold bg-[#007AFF]/10 text-[#007AFF] hover:bg-[#007AFF]/20 rounded-xl transition-colors flex items-center justify-between"
             >
-              <span>Formulir Pesan Cepat</span>
+              <span>Formulir Pesanan Grosir</span>
               <span>→</span>
             </button>
 
             <button
               onClick={() =>
-                openWhatsAppWithMessage('Halo Admin Radar Mineral, saya ingin memesan Galon 19L untuk area Makassar.')
+                openWhatsAppWithMessage(
+                  'Halo Admin Distributor Radar Mineral Makassar, saya ingin menanyakan jadwal pengantaran armada untuk pasokan toko kami. Terima kasih.'
+                )
               }
               className="w-full text-left px-3 py-2 text-[13px] font-medium bg-green-50 text-green-700 hover:bg-green-100 rounded-xl transition-colors flex items-center justify-between"
             >
-              <span>Pesan Galon 19L via WA</span>
+              <span>Jadwal Pengantaran Armada</span>
               <Send className="w-3.5 h-3.5" />
             </button>
 
             <button
               onClick={() =>
-                openWhatsAppWithMessage('Halo Admin, mau tanya info harga & stok Air Dus untuk acara / kantor.')
+                openWhatsAppWithMessage(
+                  'Halo Tim Kemitraan Radar Mineral, kami toko/grosir bahan campuran ingin mendaftar sebagai mitra pasokan rutin berkala. Mohon informasinya.'
+                )
               }
               className="w-full text-left px-3 py-2 text-[13px] font-medium bg-gray-50 text-gray-700 hover:bg-gray-100 rounded-xl transition-colors flex items-center justify-between"
             >
-              <span>Tanya Air Dus / Karton</span>
+              <span>Kemitraan Toko & Grosir</span>
               <Send className="w-3.5 h-3.5" />
             </button>
           </div>

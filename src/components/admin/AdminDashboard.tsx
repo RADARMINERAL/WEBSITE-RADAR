@@ -333,32 +333,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, onLo
   // Follow-up Tagihan WhatsApp ke Toko / PIC (Requirement 1)
   const handleWhatsAppBilling = (order: AdminOrderRow) => {
     const waPhone = formatWhatsAppNumber(order.phone);
-    const storeLabel = order.storeName ? `*${order.storeName}* (${order.customerName})` : `*${order.customerName}*`;
+    const storeLabel = order.storeName ? `${order.storeName} (${order.customerName})` : order.customerName;
     const totalFormatted = formatCurrency(order.total);
-    const itemsList = order.items.map((it) => `  • ${it.quantity}x ${it.productName}`).join('\n');
+    const itemsList = order.items.map((it) => `- ${it.quantity}x ${it.productName}`).join('\n');
 
     const message =
-      `📦 *RADAR MINERAL MAKASSAR — INVOICE & TAGIHAN PASOKAN*\n` +
-      `══════════════════════════════\n` +
-      `Kepada Yth. ${storeLabel}\n` +
-      `📋 *Kode Pesanan:* \`${order.orderCode}\`\n` +
-      `📅 *Tanggal Pesan:* ${formatDate(order.createdAt)}\n\n` +
-      `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-      `🛒 *RINCIAN PASOKAN:*\n` +
+      `*PEMBERITAHUAN TAGIHAN PASOKAN AIR — RADAR MINERAL MAKASSAR*\n\n` +
+      `Yth. *${storeLabel}*,\n\n` +
+      `Terima kasih atas kerja sama Anda dengan Radar Mineral Makassar. Berikut rincian tagihan pesanan air mineral toko Anda:\n\n` +
+      `• Kode Pesanan: *${order.orderCode}*\n` +
+      `• Tanggal: ${formatDate(order.createdAt)}\n\n` +
+      `*Rincian Pasokan:*\n` +
       `${itemsList}\n\n` +
-      `💰 *TOTAL TAGIHAN:* *${totalFormatted}*\n` +
-      `💳 *Status Pembayaran:* *${order.paymentStatus || 'Belum Dibayar'}*\n` +
-      `🏷️ *Metode Pembayaran:* *${order.paymentMethod.toUpperCase()}*\n` +
-      `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
-      `🏦 *REKENING RESMI PEMBAYARAN:*\n` +
-      `• Bank: *BCA (Bank Central Asia)*\n` +
-      `• No. Rekening: *789-012-3456*\n` +
-      `• Atas Nama: *Koperasi Radar Mineral*\n\n` +
-      `📌 *Konfirmasi Pembayaran:*\n` +
-      `Mohon kirimkan foto/tangkapan layar bukti transfer ke chat ini untuk pencatatan di sistem admin.\n\n` +
-      `══════════════════════════════\n` +
-      `_Layanan Pasokan Air Minum Higienis B2B Makassar_\n` +
-      `_Terima kasih atas kerja sama dan kepercayaannya!_`;
+      `• Total Tagihan: *${totalFormatted}*\n` +
+      `• Status Pembayaran: *${order.paymentStatus || 'Belum Dibayar'}*\n` +
+      `• Metode Pembayaran: *${order.paymentMethod.toUpperCase()}*\n\n` +
+      `*Rekening Resmi Pembayaran:*\n` +
+      `Bank: *BCA (Bank Central Asia)*\n` +
+      `No. Rekening: *789-012-3456*\n` +
+      `Atas Nama: *Koperasi Radar Mineral*\n\n` +
+      `Mohon informasikan bukti transfer melalui pesan ini setelah pembayaran diselesaikan untuk pencatatan pada sistem admin kami.\n\n` +
+      `Hormat kami,\n` +
+      `*Admin Keuangan & Operasional Radar Mineral Makassar*`;
 
     const encoded = encodeURIComponent(message);
     window.open(`https://wa.me/${waPhone}?text=${encoded}`, '_blank');
@@ -367,26 +363,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, onLo
   // Update Pengiriman Armada & ETA via WhatsApp
   const handleWhatsAppShippingUpdate = (order: AdminOrderRow) => {
     const waPhone = formatWhatsAppNumber(order.phone);
-    const storeLabel = order.storeName ? `*${order.storeName}* (${order.customerName})` : `*${order.customerName}*`;
-    const itemsList = order.items.map((it) => `  • ${it.quantity}x ${it.productName}`).join('\n');
-    const etaInfo = order.etaText ? `\n⏱️ *Estimasi Tiba (ETA):* *${order.etaText}*` : '';
+    const storeLabel = order.storeName ? `${order.storeName} (${order.customerName})` : order.customerName;
+    const itemsList = order.items.map((it) => `- ${it.quantity}x ${it.productName}`).join('\n');
+    const etaInfo = order.etaText ? `\n• Estimasi Tiba (ETA): *${order.etaText}*` : '';
 
     const message =
-      `*RADAR MINERAL — UPDATE PENGIRIMAN ARMADA*\n` +
-      `══════════════════════════════\n` +
-      `Halo ${storeLabel},\n\n` +
-      `Kabar baik! Pasokan air mineral pesanan Anda saat ini:\n` +
-      `*Status:* *${STATUS_META[order.status]?.label || order.status.toUpperCase()}* 🚛` +
-      `${etaInfo}\n\n` +
-      `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-      `*Kode Pesanan:* \`${order.orderCode}\`\n` +
-      `*Alamat Tujuan:* ${order.address} (${order.district})\n\n` +
-      `*Rincian Muatan:*\n` +
-      `${itemsList}\n` +
-      `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
-      `Supir armada kami sedang dalam perjalanan menuju lokasi toko Anda. Mohon pastikan area penerimaan telah siap.\n\n` +
-      `══════════════════════════════\n` +
-      `_Layanan Distribusi Armada Radar Mineral Makassar_`;
+      `*INFORMASI PENGANTARAN PASOKAN — RADAR MINERAL MAKASSAR*\n\n` +
+      `Yth. *${storeLabel}*,\n\n` +
+      `Menginformasikan bahwa pesanan pasokan air mineral toko Anda saat ini sedang dalam proses pengantaran armada kurir kami.\n\n` +
+      `• Kode Pesanan: *${order.orderCode}*\n` +
+      `• Status: *${STATUS_META[order.status]?.label || order.status.toUpperCase()}*` +
+      `${etaInfo}\n` +
+      `• Alamat Pengantaran: ${order.address} (${order.district})\n\n` +
+      `*Rincian Pasokan:*\n` +
+      `${itemsList}\n\n` +
+      `Supir armada kami akan segera tiba di lokasi toko Anda. Mohon pastikan area penerimaan dan penyerahan galon kosong telah siap.\n\n` +
+      `Hormat kami,\n` +
+      `*Tim Logistik & Distribusi Radar Mineral Makassar*`;
 
     const encoded = encodeURIComponent(message);
     window.open(`https://wa.me/${waPhone}?text=${encoded}`, '_blank');
@@ -395,9 +388,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, onLo
   // Chat Langsung WhatsApp dengan Toko / PIC
   const handleDirectWhatsAppChat = (order: AdminOrderRow) => {
     const waPhone = formatWhatsAppNumber(order.phone);
-    const storeLabel = order.storeName ? `*${order.storeName}*` : `*${order.customerName}*`;
+    const storeLabel = order.storeName ? `${order.storeName}` : order.customerName;
     const message =
-      `Halo ${storeLabel}, kami dari Admin Distributor Radar Mineral Makassar terkait pesanan \`${order.orderCode}\`...`;
+      `Yth. *${storeLabel}*,\n\n` +
+      `Kami dari Admin Distributor Radar Mineral Makassar ingin mengonfirmasi terkait pesanan pasokan air mineral dengan Kode: *${order.orderCode}*.\n\n` +
+      `Apakah ada hal yang dapat kami bantu terkait jadwal pengantaran atau kebutuhan pasokan toko Anda? Terima kasih.`;
     const encoded = encodeURIComponent(message);
     window.open(`https://wa.me/${waPhone}?text=${encoded}`, '_blank');
   };

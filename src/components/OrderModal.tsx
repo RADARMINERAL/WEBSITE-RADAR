@@ -261,26 +261,22 @@ export const OrderModal: React.FC<OrderModalProps> = ({
       }).format(totalAmount);
 
       const message =
-        `📦 *PURCHASE ORDER PASOKAN GROSIR — RADAR MINERAL*\n` +
-        `══════════════════════════════\n` +
-        `Halo Admin Distributor Radar Mineral Makassar,\n` +
-        `Saya ingin memesan pasokan air mineral resmi untuk toko kami:\n\n` +
-        `📋 *Kode Pesanan:* \`${orderCode}\`\n` +
-        (storeName.trim() ? `🏢 *Nama Toko / Usaha:* *${storeName.trim()}*\n` : '') +
-        `👤 *PIC / Pemesan:* ${name.trim()}\n` +
-        `📱 *No. WhatsApp:* ${phone.trim()}\n` +
-        `📍 *Alamat Pengiriman:* ${address.trim()}\n` +
-        `🗺️ *Kecamatan:* Kec. ${district}, Makassar\n\n` +
-        `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-        `🛒 *RINCIAN PASOKAN (MOQ B2B):*\n` +
+        `*FORMULIR PEMESANAN PASOKAN GROSIR — RADAR MINERAL*\n\n` +
+        `Yth. Tim Distribusi Radar Mineral Makassar,\n\n` +
+        `Berikut rincian pesanan pasokan air mineral untuk toko/usaha kami:\n\n` +
+        `• Kode Pesanan: *${orderCode}*\n` +
+        (storeName.trim() ? `• Nama Toko / Usaha: *${storeName.trim()}*\n` : '') +
+        `• Penanggung Jawab (PIC): ${name.trim()}\n` +
+        `• No. WhatsApp: ${phone.trim()}\n` +
+        `• Alamat Pengiriman: ${address.trim()}, Kec. ${district}, Makassar\n\n` +
+        `*Rincian Pasokan:*\n` +
         `${itemsSummaryWhatsApp}\n\n` +
-        `💰 *ESTIMASI TOTAL:* *${totalFormatted}*\n` +
-        `💳 *Metode Pembayaran:* *${paymentLabel}*\n` +
-        `🏷️ *Status Pembayaran:* *${paymentStatusText}*\n` +
-        (notes.trim() ? `📝 *Catatan Toko / Jam Buka:* ${notes.trim()}\n` : '') +
-        `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
-        `✅ _Pesanan telah otomatis terdata di sistem database B2B Radar Mineral._\n` +
-        `Mohon konfirmasi ketersediaan rute armada pengantar hari ini. Terima kasih!`;
+        `• Total Pembayaran: *${totalFormatted}*\n` +
+        `• Metode Pembayaran: ${paymentLabel}\n` +
+        `• Status Pembayaran: ${paymentStatusText}\n` +
+        (notes.trim() ? `• Catatan Khusus: ${notes.trim()}\n` : '') +
+        `\n` +
+        `Pesanan ini telah dicatat pada sistem Radar Mineral. Mohon konfirmasi jadwal dan rute pengantaran armada. Terima kasih.`;
 
       const encoded = encodeURIComponent(message);
       const waUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encoded}`;
