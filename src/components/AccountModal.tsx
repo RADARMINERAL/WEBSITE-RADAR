@@ -405,13 +405,15 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                             }).format(order.total || 0)}
                           </span>
                           <a
-                            href={`https://wa.me/${WHATSAPP_NUMBER}?text=Halo%20Admin%20Radar%20Mineral,%20saya%20ingin%20cek%20status%20pesanan%20dengan%20Kode:%20${order.orderCode}`}
+                            href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
+                              `Halo Admin Radar Mineral Makassar, saya ingin menanyakan status pesanan toko dengan Kode: *${order.orderCode}* (${order.storeName || order.customerName}). Terima kasih.`
+                            )}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="p-1.5 bg-blue-50 text-[#007AFF] hover:bg-[#007AFF] hover:text-white rounded-lg transition-colors inline-flex items-center gap-1 text-[11px] font-medium"
+                            className="px-2.5 py-1.5 bg-[#25D366]/10 hover:bg-[#25D366] text-[#25D366] hover:text-white rounded-lg transition-all inline-flex items-center gap-1.5 text-xs font-bold shadow-2xs cursor-pointer active:scale-95"
                             title="Tanya Admin di WhatsApp"
                           >
-                            <MessageSquare className="w-3.5 h-3.5" />
+                            <MessageSquare className="w-3.5 h-3.5 fill-current" />
                             <span>Tanya CS</span>
                           </a>
                         </div>
@@ -424,18 +426,25 @@ export const AccountModal: React.FC<AccountModalProps> = ({
           </div>
 
           {/* Quick CS Support */}
-          <div className="p-3.5 bg-blue-50/60 rounded-xl border border-blue-100 flex items-center justify-between text-xs">
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-[#007AFF]" />
-              <span className="text-gray-700">Butuh jadwal pengiriman rutin toko?</span>
+          <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50/60 rounded-2xl border border-blue-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-[#007AFF]/10 text-[#007AFF] flex items-center justify-center shrink-0">
+                <Clock className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="font-bold text-gray-900 block">Jadwal Pasokan Rutin Toko</span>
+                <span className="text-gray-500 text-[11px]">Ingin pasokan mingguan terjadwal otomatis tanpa pesan ulang?</span>
+              </div>
             </div>
             <a
-              href={`https://wa.me/${WHATSAPP_NUMBER}?text=Halo%20Admin%20Radar%20Mineral,%20saya%20ingin%20jadwalkan%20pasokan%20rutin%20toko`}
+              href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
+                `Halo Admin Distributor Radar Mineral Makassar, saya ingin menjadwalkan pasokan armada rutin untuk toko kami. Mohon info skema pasokan berkala. Terima kasih!`
+              )}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[#007AFF] font-bold hover:underline"
+              className="px-4 py-2 bg-[#007AFF] hover:bg-[#0062cc] text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all shrink-0 cursor-pointer active:scale-95"
             >
-              Hubungi CS →
+              <span>Hubungi CS Armada →</span>
             </a>
           </div>
         </div>

@@ -261,19 +261,26 @@ export const OrderModal: React.FC<OrderModalProps> = ({
       }).format(totalAmount);
 
       const message =
-        `*PESANAN GROSIR B2B - RADAR MINERAL MAKASSAR*\n` +
-        `*Kode Pesanan:* ${orderCode}\n\n` +
-        (storeName.trim() ? `*Nama Toko / Usaha:* ${storeName.trim()}\n` : '') +
-        `*Penanggung Jawab / PIC:* ${name.trim()}\n` +
-        `*No. WhatsApp:* ${phone.trim()}\n` +
-        `*Alamat Toko:* ${address.trim()}\n` +
-        `*Kecamatan:* ${district}, Makassar\n\n` +
-        `*Rincian Pasokan Grosir:*\n${itemsSummaryWhatsApp}\n\n` +
-        `*Estimasi Total:* ${totalFormatted}\n` +
-        `*Metode Pembayaran:* ${paymentLabel}\n` +
-        `*Status Pembayaran:* ${paymentStatusText}\n` +
-        (notes ? `*Catatan / Jam Operasional:* ${notes.trim()}\n\n` : '\n') +
-        `Pesanan telah dicatat di sistem B2B Radar Mineral. Mohon konfirmasi jadwal kirim armada. Terima kasih!`;
+        `📦 *PURCHASE ORDER PASOKAN GROSIR — RADAR MINERAL*\n` +
+        `══════════════════════════════\n` +
+        `Halo Admin Distributor Radar Mineral Makassar,\n` +
+        `Saya ingin memesan pasokan air mineral resmi untuk toko kami:\n\n` +
+        `📋 *Kode Pesanan:* \`${orderCode}\`\n` +
+        (storeName.trim() ? `🏢 *Nama Toko / Usaha:* *${storeName.trim()}*\n` : '') +
+        `👤 *PIC / Pemesan:* ${name.trim()}\n` +
+        `📱 *No. WhatsApp:* ${phone.trim()}\n` +
+        `📍 *Alamat Pengiriman:* ${address.trim()}\n` +
+        `🗺️ *Kecamatan:* Kec. ${district}, Makassar\n\n` +
+        `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+        `🛒 *RINCIAN PASOKAN (MOQ B2B):*\n` +
+        `${itemsSummaryWhatsApp}\n\n` +
+        `💰 *ESTIMASI TOTAL:* *${totalFormatted}*\n` +
+        `💳 *Metode Pembayaran:* *${paymentLabel}*\n` +
+        `🏷️ *Status Pembayaran:* *${paymentStatusText}*\n` +
+        (notes.trim() ? `📝 *Catatan Toko / Jam Buka:* ${notes.trim()}\n` : '') +
+        `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+        `✅ _Pesanan telah otomatis terdata di sistem database B2B Radar Mineral._\n` +
+        `Mohon konfirmasi ketersediaan rute armada pengantar hari ini. Terima kasih!`;
 
       const encoded = encodeURIComponent(message);
       const waUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encoded}`;
@@ -414,23 +421,23 @@ export const OrderModal: React.FC<OrderModalProps> = ({
             </div>
 
             {/* Actions */}
-            <div className="pt-3 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
               {lastWhatsAppUrl && (
                 <a
                   href={lastWhatsAppUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full sm:w-auto px-6 py-2.5 bg-[#25D366] hover:bg-[#20bd5a] text-white font-semibold rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs"
+                  className="w-full sm:w-auto px-6 py-3 bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition-all shadow-[0_4px_14px_rgba(37,211,102,0.3)] active:scale-95 cursor-pointer"
                 >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  Buka Chat WhatsApp Lagi
+                  <ExternalLink className="w-4 h-4" />
+                  <span>Buka Chat WhatsApp</span>
                 </a>
               )}
               <button
                 onClick={onClose}
-                className="w-full sm:w-auto px-7 py-2.5 bg-gray-900 hover:bg-black text-white font-semibold rounded-xl text-xs transition-all shadow-xs cursor-pointer"
+                className="w-full sm:w-auto px-7 py-3 bg-gray-900 hover:bg-black text-white font-bold rounded-xl text-xs transition-all shadow-xs cursor-pointer active:scale-95"
               >
-                Tutup Selesai
+                Selesai / Tutup
               </button>
             </div>
           </div>
@@ -734,8 +741,8 @@ export const OrderModal: React.FC<OrderModalProps> = ({
             {/* Footer Summary & Submit */}
             <div className="pt-4 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div>
-                <p className="text-xs text-gray-500">Estimasi Total ({totalItemsCount} item):</p>
-                <p className="text-xl font-bold text-[#007AFF] font-sora">
+                <p className="text-xs text-gray-500 font-medium">Estimasi Total ({totalItemsCount} item):</p>
+                <p className="text-2xl font-extrabold text-[#007AFF] font-sora">
                   {new Intl.NumberFormat('id-ID', {
                     style: 'currency',
                     currency: 'IDR',
@@ -747,17 +754,17 @@ export const OrderModal: React.FC<OrderModalProps> = ({
               <button
                 type="submit"
                 disabled={totalItemsCount === 0 || isSubmitting}
-                className="w-full sm:w-auto px-7 py-3.5 bg-[#25D366] hover:bg-[#20bd5a] disabled:opacity-50 text-white font-bold text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+                className="w-full sm:w-auto px-8 py-4 bg-[#25D366] hover:bg-[#20bd5a] disabled:opacity-50 text-white font-bold text-sm rounded-xl transition-all shadow-[0_4px_14px_rgba(37,211,102,0.35)] hover:shadow-[0_6px_20px_rgba(37,211,102,0.45)] flex items-center justify-center gap-2.5 cursor-pointer active:scale-95"
               >
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Menyimpan Pesanan...</span>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Mencatat Pesanan...</span>
                   </>
                 ) : (
                   <>
-                    <Send className="w-4 h-4" />
-                    <span>Kirim Pesanan Grosir ke WhatsApp</span>
+                    <Send className="w-4 h-4 fill-current" />
+                    <span>Kirim Pesanan Grosir via WhatsApp</span>
                   </>
                 )}
               </button>

@@ -335,19 +335,69 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, onLo
     const waPhone = formatWhatsAppNumber(order.phone);
     const storeLabel = order.storeName ? `*${order.storeName}* (${order.customerName})` : `*${order.customerName}*`;
     const totalFormatted = formatCurrency(order.total);
+    const itemsList = order.items.map((it) => `  • ${it.quantity}x ${it.productName}`).join('\n');
 
     const message =
-      `*PEMBERITAHUAN TAGIHAN PASOKAN AIR - RADAR MINERAL MAKASSAR*\n\n` +
-      `Yth. ${storeLabel},\n` +
-      `Berikut rincian pesanan pasokan air mineral toko Anda:\n\n` +
-      `• *Kode Pesanan:* ${order.orderCode}\n` +
-      `• *Total Tagihan:* ${totalFormatted}\n` +
-      `• *Status Pembayaran:* ${order.paymentStatus || 'Belum Dibayar'}\n` +
-      `• *Metode Pembayaran:* ${order.paymentMethod.toUpperCase()}\n\n` +
-      `Mohon informasikan bukti transfer atau konfirmasi penyelesaian pembayaran ke admin kami. Rekening resmi:\n` +
-      `*BCA: 789-012-3456 (a.n. Koperasi Radar Mineral)*\n\n` +
-      `Terima kasih atas kerja sama dan kepercayaannya!`;
+      `📦 *RADAR MINERAL MAKASSAR — INVOICE & TAGIHAN PASOKAN*\n` +
+      `══════════════════════════════\n` +
+      `Kepada Yth. ${storeLabel}\n` +
+      `📋 *Kode Pesanan:* \`${order.orderCode}\`\n` +
+      `📅 *Tanggal Pesan:* ${formatDate(order.createdAt)}\n\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+      `🛒 *RINCIAN PASOKAN:*\n` +
+      `${itemsList}\n\n` +
+      `💰 *TOTAL TAGIHAN:* *${totalFormatted}*\n` +
+      `💳 *Status Pembayaran:* *${order.paymentStatus || 'Belum Dibayar'}*\n` +
+      `🏷️ *Metode Pembayaran:* *${order.paymentMethod.toUpperCase()}*\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `🏦 *REKENING RESMI PEMBAYARAN:*\n` +
+      `• Bank: *BCA (Bank Central Asia)*\n` +
+      `• No. Rekening: *789-012-3456*\n` +
+      `• Atas Nama: *Koperasi Radar Mineral*\n\n` +
+      `📌 *Konfirmasi Pembayaran:*\n` +
+      `Mohon kirimkan foto/tangkapan layar bukti transfer ke chat ini untuk pencatatan di sistem admin.\n\n` +
+      `══════════════════════════════\n` +
+      `_Layanan Pasokan Air Minum Higienis B2B Makassar_\n` +
+      `_Terima kasih atas kerja sama dan kepercayaannya!_`;
 
+    const encoded = encodeURIComponent(message);
+    window.open(`https://wa.me/${waPhone}?text=${encoded}`, '_blank');
+  };
+
+  // Update Pengiriman Armada & ETA via WhatsApp
+  const handleWhatsAppShippingUpdate = (order: AdminOrderRow) => {
+    const waPhone = formatWhatsAppNumber(order.phone);
+    const storeLabel = order.storeName ? `*${order.storeName}* (${order.customerName})` : `*${order.customerName}*`;
+    const itemsList = order.items.map((it) => `  • ${it.quantity}x ${it.productName}`).join('\n');
+    const etaInfo = order.etaText ? `\n⏱️ *Estimasi Tiba (ETA):* *${order.etaText}*` : '';
+
+    const message =
+      `🚚 *RADAR MINERAL — UPDATE PENGIRIMAN ARMADA*\n` +
+      `══════════════════════════════\n` +
+      `Halo ${storeLabel},\n\n` +
+      `Kabar baik! Pasokan air mineral pesanan Anda saat ini:\n` +
+      `🏷️ *Status:* *${STATUS_META[order.status]?.label || order.status.toUpperCase()}* 🚛` +
+      `${etaInfo}\n\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+      `📋 *Kode Pesanan:* \`${order.orderCode}\`\n` +
+      `📍 *Alamat Tujuan:* ${order.address} (${order.district})\n\n` +
+      `🛒 *Rincian Muatan:*\n` +
+      `${itemsList}\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `Supir armada kami sedang dalam perjalanan menuju lokasi toko Anda. Mohon pastikan area penerimaan telah siap.\n\n` +
+      `══════════════════════════════\n` +
+      `_Layanan Distribusi Armada Radar Mineral Makassar_`;
+
+    const encoded = encodeURIComponent(message);
+    window.open(`https://wa.me/${waPhone}?text=${encoded}`, '_blank');
+  };
+
+  // Chat Langsung WhatsApp dengan Toko / PIC
+  const handleDirectWhatsAppChat = (order: AdminOrderRow) => {
+    const waPhone = formatWhatsAppNumber(order.phone);
+    const storeLabel = order.storeName ? `*${order.storeName}*` : `*${order.customerName}*`;
+    const message =
+      `Halo ${storeLabel}, kami dari Admin Distributor Radar Mineral Makassar terkait pesanan \`${order.orderCode}\`...`;
     const encoded = encodeURIComponent(message);
     window.open(`https://wa.me/${waPhone}?text=${encoded}`, '_blank');
   };
@@ -858,7 +908,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, onLo
                     <div className="flex items-center gap-3 flex-wrap">
                       {/* Total IDR */}
                       <div>
-                        <span className="text-[10px] text-gray-400 block">Total Transaksi:</span>
+                        <span className="text-[10px] text-gray-400 block">Total Tagihan:</span>
                         <span className="font-bold text-base text-[#007AFF] font-sora">
                           {formatCurrency(order.total)}
                         </span>
@@ -873,7 +923,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, onLo
                             setEditPaymentRef(order.paymentReference || '');
                             setEditAmountPaid(order.amountPaid || 0);
                           }}
-                          className={`px-3 py-1 rounded-full text-xs font-bold border transition-colors cursor-pointer flex items-center gap-1.5 ${
+                          className={`px-3 py-1 rounded-full text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 shadow-xs ${
                             order.paymentStatus === 'Sudah Dibayar'
                               ? 'bg-green-50 text-green-700 border-green-300 hover:bg-green-100'
                               : order.paymentStatus === 'DP (Sebagian)'
@@ -886,24 +936,36 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, onLo
                           <span>{order.paymentStatus || 'Belum Dibayar'}</span>
                           <Edit3 className="w-2.5 h-2.5 opacity-60" />
                         </button>
-
-                        {/* WhatsApp Tagihan Reminder Button for Unpaid Orders */}
-                        {isUnpaid && (
-                          <button
-                            onClick={() => handleWhatsAppBilling(order)}
-                            className="p-1.5 bg-[#25D366]/10 hover:bg-[#25D366] text-[#25D366] hover:text-white rounded-lg transition-colors cursor-pointer text-xs font-semibold flex items-center gap-1"
-                            title="Kirim pesan tagihan resmi ke WhatsApp pemilik toko"
-                          >
-                            <MessageSquare className="w-3.5 h-3.5" />
-                            <span className="hidden md:inline">Tagih WA</span>
-                          </button>
-                        )}
                       </div>
                     </div>
 
-                    {/* Right action buttons: Invoice, Admin Notes, Status Advance */}
+                    {/* Right action buttons: WhatsApp CTAs, Invoice, Admin Notes, Status Advance */}
                     <div className="flex items-center gap-2 flex-wrap">
                       {isUpdating && <Loader2 className="w-4 h-4 animate-spin text-[#007AFF]" />}
+
+                      {/* WhatsApp Billing Reminder CTA */}
+                      {isUnpaid && order.status !== 'batal' && (
+                        <button
+                          onClick={() => handleWhatsAppBilling(order)}
+                          className="px-3 py-1.5 bg-[#25D366] hover:bg-[#20bd5a] text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-95"
+                          title="Kirim pesan tagihan resmi & instruksi transfer ke WhatsApp pemilik toko"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5 fill-current" />
+                          <span>Tagih WA</span>
+                        </button>
+                      )}
+
+                      {/* WhatsApp Shipping Update CTA */}
+                      {(order.status === 'diproses' || order.status === 'dikirim') && (
+                        <button
+                          onClick={() => handleWhatsAppShippingUpdate(order)}
+                          className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-all active:scale-95"
+                          title="Kirim pesan update pengiriman armada & estimasi tiba ke WhatsApp toko"
+                        >
+                          <Truck className="w-3.5 h-3.5" />
+                          <span>Info Kirim WA</span>
+                        </button>
+                      )}
 
                       {/* Invoice Button (Requirement 5) */}
                       <button
@@ -938,7 +1000,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, onLo
                             }
                           }}
                           disabled={isUpdating}
-                          className="px-3 py-1.5 bg-[#007AFF] hover:bg-[#0062cc] disabled:opacity-50 text-white rounded-xl text-xs font-semibold cursor-pointer transition-colors shadow-xs"
+                          className="px-3.5 py-1.5 bg-[#007AFF] hover:bg-[#0062cc] disabled:opacity-50 text-white rounded-xl text-xs font-bold cursor-pointer transition-all shadow-xs active:scale-95"
                         >
                           Tandai {STATUS_META[nextStatus].label} →
                         </button>
