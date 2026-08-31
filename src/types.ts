@@ -60,6 +60,7 @@ export interface OrderRecord {
   createdAt: string;
   updatedAt?: string;
   timeline?: OrderTimeline;
+  etaText?: string; // Estimasi waktu tiba dari admin
   items: {
     product_id?: string;
     product_name?: string;

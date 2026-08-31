@@ -75,6 +75,7 @@ export async function fetchProducts(): Promise<Product[]> {
       priceDescription: item.price_description || '',
       estimatedPrice: item.estimated_price || 0,
       popular: Boolean(item.popular),
+      minOrder: item.id === 'dus-220ml' ? 10 : 5,
     }));
   } catch (err) {
     console.error('Gagal mengambil data produk dari Supabase:', err);

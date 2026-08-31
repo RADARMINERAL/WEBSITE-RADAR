@@ -14,7 +14,6 @@ import {
   XCircle,
   Droplets,
   DollarSign,
-  Download,
   FileText,
   MessageSquare,
   AlertTriangle,
@@ -24,6 +23,8 @@ import {
   Printer,
   X,
   Edit3,
+  ExternalLink,
+  Sheet,
 } from 'lucide-react';
 import {
   fetchAllOrders,
@@ -36,6 +37,9 @@ import {
 } from '../../lib/admin';
 import { OrderStatus } from '../../types';
 import { ADDRESS_DISPLAY, PHONE_DISPLAY, EMAIL_DISPLAY, LOGO_URL } from '../../data/mockData';
+// URL Google Sheet laporan real-time pesanan Radar Mineral
+// Ganti URL ini dengan URL Google Sheet Anda setelah setup selesai
+const GOOGLE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit';
 
 const STATUS_TABS: { value: OrderStatus | 'semua'; label: string }[] = [
   { value: 'semua', label: 'Semua' },
@@ -320,22 +324,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, onLo
     }
   };
 
-  const formatWhatsAppNumber = (phoneStr: string) => {
-    let digits = (phoneStr || '').replace(/[^0-9]/g, '');
-    if (digits.startsWith('0')) {
-      digits = '62' + digits.slice(1);
-    } else if (digits.startsWith('8')) {
-      digits = '62' + digits;
-    }
-    return digits;
-  };
-
   // Follow-up Tagihan WhatsApp ke Toko / PIC (Requirement 1)
   const handleWhatsAppBilling = (order: AdminOrderRow) => {
     const waPhone = formatWhatsAppNumber(order.phone);
     const storeLabel = order.storeName ? `${order.storeName} (${order.customerName})` : order.customerName;
     const totalFormatted = formatCurrency(order.total);
-    const itemsList = order.items.map((it) => `- ${it.quantity}x ${it.productName}`).join('\n');
+    const itemsList = (order.items || []).map((it) => `- ${it.quantity}x ${it.productName}`).join('\n');
 
     const message =
       `*PEMBERITAHUAN TAGIHAN PASOKAN AIR — RADAR MINERAL MAKASSAR*\n\n` +
@@ -347,7 +341,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, onLo
       `${itemsList}\n\n` +
       `• Total Tagihan: *${totalFormatted}*\n` +
       `• Status Pembayaran: *${order.paymentStatus || 'Belum Dibayar'}*\n` +
-      `• Metode Pembayaran: *${order.paymentMethod.toUpperCase()}*\n\n` +
+      `• Metode Pembayaran: *${(order.paymentMethod || '').toUpperCase()}*\n\n` +
       `*Rekening Resmi Pembayaran:*\n` +
       `Bank: *BCA (Bank Central Asia)*\n` +
       `No. Rekening: *789-012-3456*\n` +
@@ -364,7 +358,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, onLo
   const handleWhatsAppShippingUpdate = (order: AdminOrderRow) => {
     const waPhone = formatWhatsAppNumber(order.phone);
     const storeLabel = order.storeName ? `${order.storeName} (${order.customerName})` : order.customerName;
-    const itemsList = order.items.map((it) => `- ${it.quantity}x ${it.productName}`).join('\n');
+    const itemsList = (order.items || []).map((it) => `- ${it.quantity}x ${it.productName}`).join('\n');
     const etaInfo = order.etaText ? `\n• Estimasi Tiba (ETA): *${order.etaText}*` : '';
 
     const message =
@@ -372,7 +366,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, onLo
       `Yth. *${storeLabel}*,\n\n` +
       `Menginformasikan bahwa pesanan pasokan air mineral toko Anda saat ini sedang dalam proses pengantaran armada kurir kami.\n\n` +
       `• Kode Pesanan: *${order.orderCode}*\n` +
-      `• Status: *${STATUS_META[order.status]?.label || order.status.toUpperCase()}*` +
+      `• Status: *${STATUS_META[order.status]?.label || (order.status || '').toUpperCase()}*` +
       `${etaInfo}\n` +
       `• Alamat Pengantaran: ${order.address} (${order.district})\n\n` +
       `*Rincian Pasokan:*\n` +
@@ -397,98 +391,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, onLo
     window.open(`https://wa.me/${waPhone}?text=${encoded}`, '_blank');
   };
 
-  // Requirement 5.5 & 5.6: Generate & Unduh Laporan Excel / CSV
-  const handleExportExcel = () => {
-    if (filtered.length === 0) {
-      alert('Tidak ada data pesanan yang sesuai dengan filter untuk diekspor.');
-      return;
-    }
-
-    const headers = [
-      'No',
-      'Tanggal Pesan',
-      'Kode Pesanan',
-      'Nama Toko',
-      'PIC / Pemesan',
-      'No. WhatsApp',
-      'Kecamatan',
-      'Alamat Lengkap',
-      'Rincian Item',
-      'Total Nilai (Rp)',
-      'Status Pengiriman',
-      'Status Pembayaran',
-      'Metode Pembayaran',
-      'No. Referensi Transfer',
-      'Catatan Toko',
-      'Catatan Internal Admin',
-    ];
-
-    const rows = filtered.map((o, idx) => {
-      const itemsStr = o.items
-        .map((it) => `${it.quantity}x ${it.productName}`)
-        .join('; ');
-
-      return [
-        idx + 1,
-        formatDate(o.createdAt),
-        o.orderCode,
-        `"${(o.storeName || '-').replace(/"/g, '""')}"`,
-        `"${(o.customerName || '-').replace(/"/g, '""')}"`,
-        `'${o.phone}`,
-        `"${(o.district || '').replace(/"/g, '""')}"`,
-        `"${(o.address || '').replace(/"/g, '""')}"`,
-        `"${itemsStr.replace(/"/g, '""')}"`,
-        o.total,
-        o.status.toUpperCase(),
-        `"${(o.paymentStatus || 'Belum Dibayar').replace(/"/g, '""')}"`,
-        o.paymentMethod.toUpperCase(),
-        `"${(o.paymentReference || '-').replace(/"/g, '""')}"`,
-        `"${(o.notes || '-').replace(/"/g, '""')}"`,
-        `"${(o.adminNotes || '-').replace(/"/g, '""')}"`,
-      ];
-    });
-
-    // Baris Total Ringkasan di akhir
-    const totalNilaiPeriod = filtered.reduce((acc, curr) => acc + (curr.total || 0), 0);
-    const totalLunasPeriod = filtered
-      .filter((o) => o.paymentStatus === 'Sudah Dibayar')
-      .reduce((acc, curr) => acc + (curr.total || 0), 0);
-    const totalPiutangPeriod = totalNilaiPeriod - totalLunasPeriod;
-
-    const summaryRow = [
-      'TOTAL KESELURUHAN',
-      '',
-      '',
-      '',
-      '',
-      '',
-      '',
-      '',
-      `Total Pesanan: ${filtered.length}`,
-      totalNilaiPeriod,
-      `Lunas: Rp ${totalLunasPeriod.toLocaleString('id-ID')}`,
-      `Piutang: Rp ${totalPiutangPeriod.toLocaleString('id-ID')}`,
-      '',
-      '',
-      '',
-      '',
-    ];
-
-    const csvContent =
-      '\uFEFF' + // UTF-8 BOM untuk Microsoft Excel agar karakter & aksen tidak rusak
-      [headers.join(','), ...rows.map((r) => r.join(',')), summaryRow.join(',')].join('\r\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    const todayStr = new Date().toISOString().slice(0, 10);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `Laporan_Pesanan_Radar_Mineral_${dateRangeFilter}_${todayStr}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
   const formatDate = (iso: string) => {
     try {
       return new Intl.DateTimeFormat('id-ID', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso));
@@ -501,6 +403,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, onLo
     new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(
       n || 0
     );
+
 
   return (
     <div className="min-h-screen bg-[#f7f9fb] text-[#191c1e] pb-16">
@@ -525,14 +428,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, onLo
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              onClick={handleExportExcel}
-              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer"
-              title="Unduh rekap data pesanan dalam format Excel"
+            {/* Tombol Buka Laporan Google Sheet Real-Time */}
+            <a
+              href={GOOGLE_SHEET_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors"
+              title="Buka laporan real-time pesanan di Google Sheet"
             >
-              <Download className="w-3.5 h-3.5" />
-              <span>Unduh Laporan Excel</span>
-            </button>
+              <Sheet className="w-3.5 h-3.5" />
+              <span>Laporan Google Sheet</span>
+              <ExternalLink className="w-3 h-3 opacity-70" />
+            </a>
 
             <button
               onClick={load}
@@ -679,14 +586,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, onLo
               </select>
             </div>
 
-            {/* Mobile Export Button */}
-            <button
-              onClick={handleExportExcel}
-              className="sm:hidden flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-emerald-600 text-white rounded-xl text-xs font-semibold cursor-pointer shadow-xs"
+            {/* Tombol Buka Google Sheet (Mobile) */}
+            <a
+              href={GOOGLE_SHEET_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="sm:hidden flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-emerald-600 text-white rounded-xl text-xs font-semibold shadow-xs"
             >
-              <Download className="w-3.5 h-3.5" />
-              <span>Ekspor Excel</span>
-            </button>
+              <Sheet className="w-3.5 h-3.5" />
+              <span>Laporan Sheet</span>
+            </a>
           </div>
 
           {/* Row 2: Status Pengiriman Tabs */}
