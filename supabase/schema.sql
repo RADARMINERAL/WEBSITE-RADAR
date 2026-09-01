@@ -350,3 +350,65 @@ values
 )
 on conflict do nothing;
 
+
+-- ================================================================
+-- GOOGLE SHEETS REAL-TIME SYNC via pg_net
+-- ================================================================
+-- Requires: pg_net extension enabled (Database → Extensions → pg_net)
+-- Cara setup:
+--   1. Enable pg_net di Supabase Dashboard: Database → Extensions → pg_net
+--   2. Jalankan SQL ini di SQL Editor Supabase
+--   3. Ganti URL di bawah dengan URL Google Apps Script Web App Anda
+-- ================================================================
+
+-- Enable pg_net extension (jalankan sekali)
+CREATE EXTENSION IF NOT EXISTS pg_net SCHEMA extensions;
+
+-- ----------------------------------------------------------------
+-- Function: kirim data pesanan ke Google Sheets via HTTP POST
+-- ----------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.sync_order_to_google_sheets()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  _payload jsonb;
+  _google_sheet_url text := 'https://script.google.com/macros/s/YOUR_APPS_SCRIPT_ID/exec';
+  -- ⚠️  Ganti URL di atas dengan URL Apps Script dari setup Google Sheets Anda
+BEGIN
+  -- Susun payload yang akan dikirim ke Google Apps Script
+  _payload := jsonb_build_object(
+    'type',   TG_OP,
+    'table',  TG_TABLE_NAME,
+    'record', to_jsonb(NEW)
+  );
+
+  -- Kirim HTTP POST secara asinkron (tidak memblokir operasi DB)
+  PERFORM extensions.http_post(
+    url     := _google_sheet_url,
+    body    := _payload::text,
+    headers := '{"Content-Type": "application/json"}'::jsonb
+  );
+
+  RETURN NEW;
+
+EXCEPTION WHEN OTHERS THEN
+  -- Jika request gagal, operasi DB tetap berhasil (tidak rollback)
+  RAISE WARNING 'sync_order_to_google_sheets: gagal kirim ke Google Sheets: %', SQLERRM;
+  RETURN NEW;
+END;
+$$;
+
+-- ----------------------------------------------------------------
+-- Trigger: jalankan function setiap INSERT atau UPDATE di orders
+-- ----------------------------------------------------------------
+DROP TRIGGER IF EXISTS trg_sync_orders_to_sheets ON public.orders;
+
+CREATE TRIGGER trg_sync_orders_to_sheets
+  AFTER INSERT OR UPDATE
+  ON public.orders
+  FOR EACH ROW
+  EXECUTE FUNCTION public.sync_order_to_google_sheets();
+

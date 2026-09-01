@@ -39,7 +39,7 @@ import { OrderStatus } from '../../types';
 import { ADDRESS_DISPLAY, PHONE_DISPLAY, EMAIL_DISPLAY, LOGO_URL } from '../../data/mockData';
 // URL Google Sheet laporan real-time pesanan Radar Mineral
 // Ganti URL ini dengan URL Google Sheet Anda setelah setup selesai
-const GOOGLE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit';
+const GOOGLE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1WKbY36h8EArfVKfYjVGd_DtPoPo76Ogr22XS773j3x4/edit?gid=0#gid=0';
 
 const STATUS_TABS: { value: OrderStatus | 'semua'; label: string }[] = [
   { value: 'semua', label: 'Semua' },
@@ -486,8 +486,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, onLo
           <div
             onClick={() => setPaymentFilter('belum_lunas')}
             className={`bg-white p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer shadow-xs flex items-center justify-between ${paymentFilter === 'belum_lunas'
-                ? 'border-red-500 ring-2 ring-red-100 bg-red-50/20'
-                : 'border-gray-200 hover:border-red-300'
+              ? 'border-red-500 ring-2 ring-red-100 bg-red-50/20'
+              : 'border-gray-200 hover:border-red-300'
               }`}
           >
             <div>
@@ -513,8 +513,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, onLo
           <div
             onClick={() => setPaymentFilter('lunas')}
             className={`bg-white p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer shadow-xs flex items-center justify-between ${paymentFilter === 'lunas'
-                ? 'border-green-500 ring-2 ring-green-100 bg-green-50/20'
-                : 'border-gray-200 hover:border-green-300'
+              ? 'border-green-500 ring-2 ring-green-100 bg-green-50/20'
+              : 'border-gray-200 hover:border-green-300'
               }`}
           >
             <div>
@@ -606,8 +606,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, onLo
                 key={tab.value}
                 onClick={() => setActiveTab(tab.value)}
                 className={`shrink-0 px-3.5 py-1.5 rounded-xl text-xs font-semibold border transition-colors cursor-pointer ${activeTab === tab.value
-                    ? 'bg-[#007AFF] text-white border-[#007AFF]'
-                    : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+                  ? 'bg-[#007AFF] text-white border-[#007AFF]'
+                  : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
                   }`}
               >
                 {tab.label} ({counts[tab.value] || 0})
@@ -621,8 +621,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, onLo
             <button
               onClick={() => setPaymentFilter('semua')}
               className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors cursor-pointer ${paymentFilter === 'semua'
-                  ? 'bg-gray-900 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                ? 'bg-gray-900 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
             >
               Semua
@@ -630,8 +630,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, onLo
             <button
               onClick={() => setPaymentFilter('belum_lunas')}
               className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${paymentFilter === 'belum_lunas'
-                  ? 'bg-red-600 text-white'
-                  : 'bg-red-50 text-red-700 hover:bg-red-100'
+                ? 'bg-red-600 text-white'
+                : 'bg-red-50 text-red-700 hover:bg-red-100'
                 }`}
             >
               <span className="w-2 h-2 rounded-full bg-red-400" />
@@ -640,8 +640,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, onLo
             <button
               onClick={() => setPaymentFilter('lunas')}
               className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${paymentFilter === 'lunas'
-                  ? 'bg-green-600 text-white'
-                  : 'bg-green-50 text-green-700 hover:bg-green-100'
+                ? 'bg-green-600 text-white'
+                : 'bg-green-50 text-green-700 hover:bg-green-100'
                 }`}
             >
               <span className="w-2 h-2 rounded-full bg-green-400" />
@@ -650,8 +650,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, onLo
             <button
               onClick={() => setPaymentFilter('dp')}
               className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors cursor-pointer ${paymentFilter === 'dp'
-                  ? 'bg-amber-600 text-white'
-                  : 'bg-amber-50 text-amber-800 hover:bg-amber-100'
+                ? 'bg-amber-600 text-white'
+                : 'bg-amber-50 text-amber-800 hover:bg-amber-100'
                 }`}
             >
               🟡 DP (Sebagian)
@@ -692,8 +692,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, onLo
                 <div
                   key={order.id}
                   className={`bg-white rounded-2xl border p-4 sm:p-5 shadow-xs transition-all ${isUnpaid && order.status === 'selesai'
-                      ? 'border-red-300 bg-red-50/10'
-                      : 'border-gray-200 hover:border-gray-300'
+                    ? 'border-red-300 bg-red-50/10'
+                    : 'border-gray-200 hover:border-gray-300'
                     }`}
                 >
                   {/* Top Bar Card */}
@@ -820,10 +820,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, onLo
                             setEditAmountPaid(order.amountPaid || 0);
                           }}
                           className={`px-3 py-1 rounded-full text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 shadow-xs ${order.paymentStatus === 'Sudah Dibayar'
-                              ? 'bg-green-50 text-green-700 border-green-300 hover:bg-green-100'
-                              : order.paymentStatus === 'DP (Sebagian)'
-                                ? 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'
-                                : 'bg-red-50 text-red-700 border-red-300 hover:bg-red-100'
+                            ? 'bg-green-50 text-green-700 border-green-300 hover:bg-green-100'
+                            : order.paymentStatus === 'DP (Sebagian)'
+                              ? 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'
+                              : 'bg-red-50 text-red-700 border-red-300 hover:bg-red-100'
                             }`}
                           title="Klik untuk ubah status pembayaran / tambah no ref transfer"
                         >
@@ -979,8 +979,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, onLo
                   <p className="text-gray-500 text-[11px]">Tanggal: {formatDate(invoiceOrder.createdAt)}</p>
                   <span
                     className={`inline-block mt-2 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${invoiceOrder.paymentStatus === 'Sudah Dibayar'
-                        ? 'bg-green-100 text-green-800 border border-green-300'
-                        : 'bg-red-100 text-red-800 border border-red-300'
+                      ? 'bg-green-100 text-green-800 border border-green-300'
+                      : 'bg-red-100 text-red-800 border border-red-300'
                       }`}
                   >
                     STATUS: {invoiceOrder.paymentStatus || 'BELUM LUNAS'}
@@ -1084,8 +1084,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminEmail, onLo
                     setCustomEta('');
                   }}
                   className={`py-2 px-3 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${selectedEta === eta && !customEta
-                      ? 'bg-[#007AFF] text-white border-[#007AFF]'
-                      : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
+                    ? 'bg-[#007AFF] text-white border-[#007AFF]'
+                    : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
                     }`}
                 >
                   {eta}
