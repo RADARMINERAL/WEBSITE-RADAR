@@ -133,9 +133,15 @@ create policy "faq publik" on faq_items
   for select using (true);
 
 -- Policy 3: Checkout pesanan baru dapat dibuat oleh siapa saja tanpa login
--- WITH CHECK (true) intentional: sistem B2B public checkout tanpa akun
+-- WITH CHECK memvalidasi field wajib agar tidak ada insert kosong / spam
 create policy "siapapun bisa checkout" on orders
-  for insert with check (true);
+  for insert with check (
+    customer_name is not null and trim(customer_name) <> ''
+    and phone     is not null and trim(phone)         <> ''
+    and address   is not null and trim(address)       <> ''
+    and district  is not null and trim(district)      <> ''
+    and payment_method in ('qris', 'transfer', 'cod')
+  );
 
 -- Policy 4: Item pesanan hanya boleh dimasukkan jika order_id valid (ada di tabel orders)
 -- Ini mencegah spam insert item untuk order_id acak / fiktif
@@ -435,7 +441,8 @@ revoke execute on function public.sync_order_to_google_sheets()
 -- [3] Eksplisit grant/revoke untuk get_my_orders(text, text)
 --     Fungsi ini PERLU diakses oleh anon (pelanggan cek pesanan tanpa login)
 --     tapi TIDAK perlu oleh authenticated (admin pakai lib/admin.ts langsung)
-revoke execute on function public.get_my_orders(text, text) from public;
+--     atau public (terlalu luas)
+revoke execute on function public.get_my_orders(text, text) from public, authenticated;
 grant  execute on function public.get_my_orders(text, text) to anon;
 
 -- [4] Informasi: auth_leaked_password_protection
