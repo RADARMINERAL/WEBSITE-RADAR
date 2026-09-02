@@ -39,9 +39,9 @@ export const HomeView: React.FC<HomeViewProps> = ({ onNavigate, onOpenOrder }) =
         <div className="absolute right-0 top-0 bottom-0 w-full lg:w-3/5 pointer-events-none opacity-25 lg:opacity-85 mix-blend-multiply flex items-center justify-end overflow-hidden">
           <div className="relative w-full h-full">
             <img
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuDiIjJC08yhMhzI51Ew6bID79AuWytQhm_vLcpbVjCo8QU1fjkF3c84hf76sjh6vDqNC5_YdPS5n5o-W9E18zMxPkDe_GroDMHlN9D4E9gySVfQuFhYJc8JPaVBtQGtrpL6Qasmwzh6-2zePs-wZyil67Lh8VBLJ8mG1lf7L8HJpDW-SbH0euLaa4ByfJlHKJulyxsWepOvWhEHvqPM5hNQjVg5AwZEK69AaSjmGr4BE2K_kCS-1OUi"
+              src={BOX_IMAGE}
               alt="Water bottle splash"
-              className="absolute right-[-10%] top-1/2 -translate-y-1/2 w-[720px] max-w-none object-cover opacity-80 filter brightness-105"
+              className="absolute right-[-5%] top-1/2 -translate-y-1/2 w-[580px] max-w-none object-contain opacity-90 filter drop-shadow-2xl"
             />
             <div className="absolute inset-0 bg-gradient-to-r from-white via-white/80 lg:via-transparent to-transparent" />
           </div>

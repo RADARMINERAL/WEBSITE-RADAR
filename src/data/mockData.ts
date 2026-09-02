@@ -1,10 +1,9 @@
 import { Product, FaqItem } from '../types';
 
-export const LOGO_URL = 'https://lh3.googleusercontent.com/aida/AEtjO1Vq73aB9Q_-XdEv5q-YRv8lM0a7Xp8m0bOjElUW-h5Wpsk6nxRMKGL7P85X1aY5uNuwcwp0ZOex49fJsPeppprArKRhIFdwry5weVFo6cjd3y3gFASyHGvcr4PHHikOdlLIBoi73IR1okx4KA0-nacbS0iEhe8eJvPdReIPk8q0Ktt-JcRFYcEi7ZTeUfw-Ph0TQ0HFpLPpF48iogVZ4vylhaXD1R4q9cCLa1ZiO2kPXRYd__Xo-OFJUE8';
-
-export const GALLON_IMAGE = 'https://lh3.googleusercontent.com/aida-public/AB6AXuA34OJreaZvE10wieVICb1bNayLOes9DyRyRUVrnzTL8aHRSgSSY01JQr49eh_Hp1a7mZcXRVXXtt0EBj_sOrvyS309M3O1yXOx5tKFHTZVbYP85HBrsCKm3NKhaYGZ57WmDyJGv5-0QhAV9y23i0r0OThd4cGCzH6F5vWfHGn_OOLF51e-x7_5VGS-TyQjZ5mIwKhncwWYftzWMslkW6c-meKvi8iniM-YGF1hNqREfgVSG0LegqNH';
-
-export const BOX_IMAGE = 'https://lh3.googleusercontent.com/aida-public/AB6AXuDiIjJC08yhMhzI51Ew6bID79AuWytQhm_vLcpbVjCo8QU1fjkF3c84hf76sjh6vDqNC5_YdPS5n5o-W9E18zMxPkDe_GroDMHlN9D4E9gySVfQuFhYJc8JPaVBtQGtrpL6Qasmwzh6-2zePs-wZyil67Lh8VBLJ8mG1lf7L8HJpDW-SbH0euLaa4ByfJlHKJulyxsWepOvWhEHvqPM5hNQjVg5AwZEK69AaSjmGr4BE2K_kCS-1OUi';
+// Foto dan Media Lokal (Folder: /public/images/)
+export const LOGO_URL = '/images/LOGO.png';
+export const GALLON_IMAGE = '/images/GALON.jpg';
+export const BOX_IMAGE = '/images/DUS.jpg';
 
 export const WHATSAPP_NUMBER = '6285787356573';
 export const WHATSAPP_DISPLAY = '0857-8735-6573';

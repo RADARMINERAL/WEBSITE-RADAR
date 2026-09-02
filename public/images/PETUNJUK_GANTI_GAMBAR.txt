@@ -1,0 +1,34 @@
+===================================================================
+📁 PETUNJUK MENGGANTI FOTO / LOGO DARI FILE LAPTOP KE WEBSITE
+===================================================================
+
+Semua foto dan logo website Radar Mineral sekarang diambil dari folder ini:
+/Users/fajrinfaturrahman/Documents/RADAR MINERAL/public/images/
+
+Anda cukup copy/paste foto dari laptop Anda ke dalam folder ini!
+
+-------------------------------------------------------------------
+1. NAMA FILE YANG DISARANKAN:
+-------------------------------------------------------------------
+- Logo Website    : logo.png atau logo.svg
+- Foto Galon 19L  : galon.png atau galon.jpg atau galon.svg
+- Foto Dus 220ml  : dus.png atau dus.jpg atau dus.svg
+
+-------------------------------------------------------------------
+2. CARA MENGGUNAKAN FOTO DENGAN NAMA / FORMAT LAIN:
+-------------------------------------------------------------------
+Jika foto Anda memiliki nama atau ekstensi lain (misalnya foto_galon_baru.jpg):
+Buka file: src/data/mockData.ts
+Ubah baris 3 - 7 menjadi:
+
+export const LOGO_URL = '/images/nama_file_logo_anda.png';
+export const GALLON_IMAGE = '/images/nama_file_galon_anda.jpg';
+export const BOX_IMAGE = '/images/nama_file_dus_anda.jpg';
+
+-------------------------------------------------------------------
+3. TIPS UKURAN GAMBAR:
+-------------------------------------------------------------------
+- Logo        : PNG transparan (sekitar 300 x 80 px)
+- Foto Galon  : Persegi / Rasio 1:1 (min. 600 x 600 px)
+- Foto Dus    : Persegi / Rasio 1:1 (min. 600 x 600 px)
+===================================================================
