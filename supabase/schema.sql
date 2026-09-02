@@ -133,12 +133,17 @@ create policy "faq publik" on faq_items
   for select using (true);
 
 -- Policy 3: Checkout pesanan baru dapat dibuat oleh siapa saja tanpa login
+-- WITH CHECK (true) intentional: sistem B2B public checkout tanpa akun
 create policy "siapapun bisa checkout" on orders
   for insert with check (true);
 
--- Policy 4: Item pesanan dapat dimasukkan saat checkout
+-- Policy 4: Item pesanan hanya boleh dimasukkan jika order_id valid (ada di tabel orders)
+-- Ini mencegah spam insert item untuk order_id acak / fiktif
 create policy "siapapun bisa isi item pesanan" on order_items
-  for insert with check (true);
+  for insert with check (
+    order_id is not null
+    and exists (select 1 from public.orders where id = order_id)
+  );
 
 -- Policy 5: User hanya bisa melihat baris admin miliknya sendiri (buat cek "apakah saya admin")
 create policy "admin bisa lihat dirinya sendiri" on admins
@@ -412,3 +417,28 @@ CREATE TRIGGER trg_sync_orders_to_sheets
   FOR EACH ROW
   EXECUTE FUNCTION public.sync_order_to_google_sheets();
 
+-- ==============================================================================
+-- SECURITY HARDENING — jalankan setelah seluruh schema di atas
+-- Fixes: Supabase Security Linter warnings (WARN level)
+-- ==============================================================================
+
+-- [1] Hapus versi lama get_my_orders(p_phone text) jika masih ada di DB
+--     (versi 1-argumen sudah tidak digunakan, diganti versi 2-argumen)
+drop function if exists public.get_my_orders(text);
+
+-- [2] REVOKE akses EXECUTE dari public/anon/authenticated untuk fungsi trigger
+--     sync_order_to_google_sheets() HANYA boleh dipanggil oleh trigger DB,
+--     bukan via REST API (/rest/v1/rpc/sync_order_to_google_sheets)
+revoke execute on function public.sync_order_to_google_sheets()
+  from anon, authenticated, public;
+
+-- [3] Eksplisit grant/revoke untuk get_my_orders(text, text)
+--     Fungsi ini PERLU diakses oleh anon (pelanggan cek pesanan tanpa login)
+--     tapi TIDAK perlu oleh authenticated (admin pakai lib/admin.ts langsung)
+revoke execute on function public.get_my_orders(text, text) from public;
+grant  execute on function public.get_my_orders(text, text) to anon;
+
+-- [4] Informasi: auth_leaked_password_protection
+--     Aktifkan lewat Supabase Dashboard:
+--     Authentication → Sign In / Up → Password → Enable "Leaked password protection"
+--     (tidak bisa diaktifkan via SQL)
