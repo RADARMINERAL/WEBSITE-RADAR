@@ -382,32 +382,33 @@ CREATE OR REPLACE FUNCTION public.sync_order_to_google_sheets()
 RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, net
 AS $$
 DECLARE
-  _payload jsonb;
+  _payload  jsonb;
+  _req_id   bigint;
+  -- ⚠️  GANTI URL INI dengan URL Google Apps Script Web App Anda
   _google_sheet_url text := 'https://script.google.com/macros/s/YOUR_APPS_SCRIPT_ID/exec';
-  -- ⚠️  Ganti URL di atas dengan URL Apps Script dari setup Google Sheets Anda
 BEGIN
-  -- Susun payload yang akan dikirim ke Google Apps Script
+  -- Susun payload JSON yang akan dikirim ke Google Apps Script
   _payload := jsonb_build_object(
     'type',   TG_OP,
     'table',  TG_TABLE_NAME,
     'record', to_jsonb(NEW)
   );
 
-  -- Kirim HTTP POST secara asinkron (tidak memblokir operasi DB)
-  PERFORM extensions.http_post(
+  -- Kirim HTTP POST via pg_net (asinkron, tidak memblokir DB)
+  -- CATATAN: net.http_post() bukan extensions.http_post()
+  SELECT net.http_post(
     url     := _google_sheet_url,
-    body    := _payload::text,
+    body    := _payload,          -- jsonb langsung (bukan ::text)
     headers := '{"Content-Type": "application/json"}'::jsonb
-  );
+  ) INTO _req_id;
 
   RETURN NEW;
 
 EXCEPTION WHEN OTHERS THEN
-  -- Jika request gagal, operasi DB tetap berhasil (tidak rollback)
-  RAISE WARNING 'sync_order_to_google_sheets: gagal kirim ke Google Sheets: %', SQLERRM;
+  RAISE WARNING 'sync_order_to_google_sheets: gagal kirim ke Sheets: % (req_id: %)', SQLERRM, _req_id;
   RETURN NEW;
 END;
 $$;
